@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# VS Code settings
+.vscode/
+
+# Downloaded Data (NEVER push this)
+data/
+
+# Trained Models (Generated artifacts, not source code)
+models/*.pth
+models/*.h5
+
+# OS temp files
+.DS_Store
+
+vanaspati_env/
