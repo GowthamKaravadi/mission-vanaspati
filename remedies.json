@@ -1,0 +1,28 @@
+{
+  "Tomato___Bacterial_spot": {
+    "description": "This disease is caused by bacteria. It appears as small, water-soaked spots on the leaves, which later turn black and develop a yellow halo.",
+    "treatment": [
+      "Remove and destroy infected plant parts immediately.",
+      "Apply copper-based fungicides or bactericides as a protective spray.",
+      "Avoid overhead watering; water at the base of the plant.",
+      "Ensure good air circulation around the plants."
+    ]
+  },
+  "Tomato___Early_blight": {
+    "description": "Caused by a fungus, this disease presents as dark, concentric 'target' spots on lower, older leaves.",
+    "treatment": [
+      "Prune affected leaves and stems.",
+      "Apply fungicides containing chlorothalonil or mancozeb.",
+      "Mulch at the base of the plant to prevent fungus from splashing from the soil.",
+      "Rotate crops and avoid planting tomatoes in the same spot for at least two years."
+    ]
+  },
+  "Tomato___healthy": {
+    "description": "Your plant appears to be healthy and free of common diseases.",
+    "treatment": [
+      "Continue good watering practices.",
+      "Provide appropriate fertilizer as needed.",
+      "Monitor regularly for any signs of pests or disease."
+    ]
+  }
+}

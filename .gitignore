@@ -1,11 +1,10 @@
+# Virtual Environment
+vanaspati_env/
+.venv/
+
 # Python cache
 __pycache__/
 *.pyc
-
-# Virtual Environment
-venv/
-.venv/
-env/
 
 # VS Code settings
 .vscode/
@@ -19,5 +18,3 @@ models/*.h5
 
 # OS temp files
 .DS_Store
-
-vanaspati_env/
