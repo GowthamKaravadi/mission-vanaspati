@@ -1,28 +1,47 @@
 {
-  "Tomato___Bacterial_spot": {
-    "description": "This disease is caused by bacteria. It appears as small, water-soaked spots on the leaves, which later turn black and develop a yellow halo.",
-    "treatment": [
-      "Remove and destroy infected plant parts immediately.",
-      "Apply copper-based fungicides or bactericides as a protective spray.",
-      "Avoid overhead watering; water at the base of the plant.",
-      "Ensure good air circulation around the plants."
+  "Pepper__bell___Bacterial_spot": {
+    "description": "Bacterial spot is a common disease of peppers and tomatoes. It is caused by several species of Xanthomonas bacteria. The disease can cause spots on leaves, stems, and fruits. The spots are initially small, water-soaked, and circular. They later become dark and sunken. The disease can lead to defoliation and reduced yield.",
+    "remedies": [
+      "Remove and destroy infected plant parts.",
+      "Avoid overhead watering.",
+      "Use copper-based bactericides.",
+      "Plant resistant varieties."
     ]
   },
-  "Tomato___Early_blight": {
-    "description": "Caused by a fungus, this disease presents as dark, concentric 'target' spots on lower, older leaves.",
-    "treatment": [
-      "Prune affected leaves and stems.",
-      "Apply fungicides containing chlorothalonil or mancozeb.",
-      "Mulch at the base of the plant to prevent fungus from splashing from the soil.",
-      "Rotate crops and avoid planting tomatoes in the same spot for at least two years."
+  "Potato___Early_blight": {
+    "description": "Early blight is a fungal disease of potatoes and tomatoes caused by Alternaria solani. The disease causes dark, circular lesions on leaves, stems, and tubers. The lesions have a characteristic 'target spot' appearance. The disease can cause defoliation and reduced yield.",
+    "remedies": [
+      "Remove and destroy infected plant parts.",
+      "Use fungicides such as chlorothalonil or mancozeb.",
+      "Practice crop rotation.",
+      "Plant resistant varieties."
     ]
   },
-  "Tomato___healthy": {
-    "description": "Your plant appears to be healthy and free of common diseases.",
-    "treatment": [
-      "Continue good watering practices.",
-      "Provide appropriate fertilizer as needed.",
-      "Monitor regularly for any signs of pests or disease."
+  "Tomato_Bacterial_spot": {
+    "description": "Bacterial spot of tomato is caused by four species of Xanthomonas. The disease causes spots on leaves, stems, and fruits. The spots are initially small, water-soaked, and circular. They later become dark and sunken. The disease can lead to defoliation and reduced yield.",
+    "remedies": [
+      "Remove and destroy infected plant parts.",
+      "Avoid overhead watering.",
+      "Use copper-based bactericides.",
+      "Plant resistant varieties."
+    ]
+  },
+  "Tomato_Late_blight": {
+    "description": "Late blight is a devastating disease of tomatoes and potatoes caused by the oomycete Phytophthora infestans. The disease can cause large, water-soaked lesions on leaves, stems, and fruits. The lesions can spread rapidly and destroy the entire plant. The disease is favored by cool, moist weather.",
+    "remedies": [
+      "Remove and destroy infected plant parts.",
+      "Use fungicides such as chlorothalonil, mancozeb, or metalaxyl.",
+      "Avoid overhead watering.",
+      "Ensure good air circulation around plants."
+    ]
+  },
+  "Tomato__Tomato_YellowLeaf__Curl_Virus": {
+    "description": "Tomato yellow leaf curl virus (TYLCV) is a DNA virus from the genus Begomovirus. It is transmitted by whiteflies. The virus causes stunting, upward curling of leaves, and yellowing of leaf margins. The disease can cause severe yield losses.",
+    "remedies": [
+      "Control whitefly populations with insecticides.",
+      "Use reflective mulches to repel whiteflies.",
+      "Remove and destroy infected plants.",
+      "Plant resistant varieties."
     ]
   }
 }

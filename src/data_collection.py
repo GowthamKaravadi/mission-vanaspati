@@ -9,7 +9,7 @@ dataset_path = data_dir / 'PlantVillage'
 if dataset_path.exists() and any(dataset_path.iterdir()):
     print(f"✅ Dataset already found at: {dataset_path}")
 else:
-    print("📥😍😍😍 Downloading PlantVillage Dataset...")
+    print(" Downloading PlantVillage Dataset...")
     data_dir.mkdir(exist_ok=True)
     
     try:
