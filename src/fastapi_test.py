@@ -1,72 +1,178 @@
-# src/fastapi_test.py
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import io
-from pathlib import Path
-import sys
-##add /docs after http://127.0.0.1:8000 to see the automatic API documentation
-# Add the project root to the Python path to allow importing from 'src'
-# This is necessary because we run uvicorn from the root directory.
-project_root = Path(__file__).parent.parent
-sys.path.append(str(project_root))
+from typing import Dict, List
 
-from src.predictor import Predictor
-
-# --- 1. Initialize the Predictor ---
-# This loads the model into memory only once when the app starts.
-model_path = project_root / "models" / "plant_classifier_final.pth"
-class_mapping_path = project_root / "models" / "class_mapping.json"
-
-# Ensure the model and mapping files exist before starting
-if not model_path.exists():
-    raise FileNotFoundError(f"Model file not found at {model_path}")
-if not class_mapping_path.exists():
-    raise FileNotFoundError(f"Class mapping file not found at {class_mapping_path}")
-
-predictor = Predictor(model_path=model_path, class_mapping_path=class_mapping_path)
+from config import active_config as cfg
+from src.core.predictor import PlantDiseasePredictor
 
 
-# --- 2. Create FastAPI app instance ---
-app = FastAPI(
-    title="Mission Vanaspati API",
-    description="API for plant disease classification.",
-    version="0.1.0"
+predictor = PlantDiseasePredictor(
+    model_path=cfg.MODEL_SAVE_PATH,
+    class_mapping_path=cfg.CLASS_MAPPING_PATH,
+    top_k=cfg.TOP_K_PREDICTIONS,
+    confidence_threshold=cfg.CONFIDENCE_THRESHOLD,
 )
 
 
-# --- 3. Define API endpoints ---
-@app.get("/")
-def read_root():
-    """
-    Root endpoint to check if the API is running.
-    """
-    return {"message": "Welcome to the Mission Vanaspati API!"}
+app = FastAPI(
+    title="Mission Vanaspati API",
+    description="Plant disease classification API using deep learning",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-@app.post("/predict")
-async def predict_disease(file: UploadFile = File(...)):
-    """
-    Accepts an image file, runs it through the model, and returns the prediction.
-    """
+@app.get("/", tags=["Health"])
+def root() -> Dict[str, str]:
+    return {
+        "message": "Welcome to Mission Vanaspati API",
+        "status": "online",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
+
+
+@app.get("/health", tags=["Health"])
+def health_check() -> Dict[str, str]:
+    return {
+        "status": "healthy",
+        "model_loaded": True,
+        "num_classes": predictor.num_classes,
+        "device": str(predictor.device),
+    }
+
+
+@app.get("/classes", tags=["Info"])
+def get_classes() -> Dict[str, List[str]]:
+    return {
+        "classes": predictor.get_all_classes(),
+        "count": predictor.num_classes
+    }
+
+
+@app.post("/predict", tags=["Prediction"])
+async def predict_disease(file: UploadFile = File(...)) -> JSONResponse:
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type: {file.content_type}. Please upload an image."
+        )
+    
     try:
-        # Read the image file
         contents = await file.read()
         image = Image.open(io.BytesIO(contents)).convert('RGB')
-
-        # Get prediction
-        predicted_class, confidence = predictor.predict(image)
-
-        return {
-            "filename": file.filename,
-            "predicted_class": predicted_class,
-            "confidence": f"{confidence:.2%}"
-        }
+        
+        result = predictor.predict(image, return_all=True)
+        
+        return JSONResponse(
+            content={
+                "predicted_class": result['class_name'],
+                "confidence": round(result['confidence'], 4),
+                "top_predictions": [
+                    {
+                        "class_name": pred['class_name'],
+                        "confidence": round(pred['confidence'], 4)
+                    }
+                    for pred in result['top_k']
+                ],
+                "filename": file.filename,
+            }
+        )
+        
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        raise HTTPException(
+            status_code=500,
+            detail=f"Prediction failed: {str(e)}"
+        )
 
-# To run this application:
-# 1. Make sure you have fastapi and uvicorn installed:
-#    pip install fastapi "uvicorn[standard]" python-multipart
-# 2. In your terminal, navigate to the project root directory (Mission Vanaspati) and run:
-#    uvicorn src.fastapi_test:app --reload
+
+@app.post("/predict/batch", tags=["Prediction"])
+async def predict_batch(files: List[UploadFile] = File(...)) -> JSONResponse:
+    if len(files) > 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum 10 images allowed per batch request"
+        )
+    
+    try:
+        images = []
+        filenames = []
+        
+        for file in files:
+            if not file.content_type.startswith("image/"):
+                continue
+            
+            contents = await file.read()
+            image = Image.open(io.BytesIO(contents)).convert('RGB')
+            images.append(image)
+            filenames.append(file.filename)
+        
+        if not images:
+            raise HTTPException(
+                status_code=400,
+                detail="No valid images found in request"
+            )
+        
+        results = predictor.predict_batch(images, return_all=True)
+        
+        predictions = []
+        for filename, result in zip(filenames, results):
+            predictions.append({
+                "filename": filename,
+                "predicted_class": result['class_name'],
+                "confidence": round(result['confidence'], 4),
+                "top_predictions": [
+                    {
+                        "class_name": pred['class_name'],
+                        "confidence": round(pred['confidence'], 4)
+                    }
+                    for pred in result.get('top_k', [result])
+                ]
+            })
+        
+        return JSONResponse(content={"predictions": predictions})
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Batch prediction failed: {str(e)}"
+        )
+
+
+@app.on_event("startup")
+async def startup_event():
+    print("=" * 70)
+    print("Mission Vanaspati API Started")
+    print(f"Model: {cfg.MODEL_SAVE_PATH.name}")
+    print(f"Classes: {predictor.num_classes}")
+    print(f"Device: {predictor.device}")
+    print("=" * 70)
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    print("Mission Vanaspati API Shutting Down")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    uvicorn.run(
+        "fastapi_test:app",
+        host=cfg.API_HOST,
+        port=cfg.API_PORT,
+        reload=cfg.API_RELOAD
+    )
 

@@ -1,0 +1,398 @@
+LINE-BY-LINE EXPLANATION: config.py
+Configuration File for Mission Vanaspati
+
+================================================================================
+PURPOSE OF THIS FILE:
+================================================================================
+This file centralizes ALL project settings in one place. Instead of having
+magic numbers scattered throughout your code (like batch_size=32 in one file
+and learning_rate=0.001 in another), everything is defined here.
+
+Benefits:
+1. Easy to modify: Change one number, affects entire project
+2. Experiment tracking: Save this file with different settings to compare results
+3. Consistency: No accidentally using different settings in different scripts
+4. Clean code: No hardcoded values cluttering your actual logic
+
+================================================================================
+IMPORTS SECTION
+================================================================================
+
+Line 13: from pathlib import Path
+- Path is a modern way to work with file paths in Python
+- Better than string concatenation: Path("data") / "models" vs "data/models"
+- Works across Windows, Mac, Linux automatically
+- Provides useful methods like .exists(), .mkdir(), .glob()
+
+Line 14: import torch
+- PyTorch deep learning library
+- Imported here to check if CUDA (GPU) is available
+- Used in line 98: torch.cuda.is_available()
+
+================================================================================
+CONFIG CLASS DEFINITION
+================================================================================
+
+Line 17: class Config:
+- A class to hold all configuration as attributes
+- Using a class (not just variables) allows:
+  * Organizing settings into categories
+  * Creating methods to validate/print config
+  * Inheriting to create Development/Production versions
+
+================================================================================
+PROJECT PATHS SECTION (Lines 24-44)
+================================================================================
+
+Line 26: PROJECT_ROOT = Path(__file__).parent
+- __file__ = full path to config.py
+- .parent = go up one directory (to project root)
+- Why: All other paths are relative to this, making project portable
+
+Line 29-33: Data directory paths
+- DATA_DIR: Root folder containing all datasets
+- PLANTVILLAGE_DIR: First dataset (from Kaggle)
+- NEWPLANTDISEASES_DIR: Second dataset (organized into train/valid/test)
+- Using Path objects: easy to construct nested paths with /
+
+Line 36-38: Model directories
+- MODELS_DIR: Where trained models are saved
+- MODEL_SAVE_PATH: Final trained model file (.pth = PyTorch weights)
+- CLASS_MAPPING_PATH: JSON file mapping class indices to disease names
+  Example: {0: "Tomato_Early_blight", 1: "Potato_Late_blight", ...}
+
+Line 41-42: Output directories
+- LOGS_DIR: Training logs, error logs, debug info
+- PLOTS_DIR: Training curves, confusion matrices, visualizations
+
+Line 45: REMEDIES_PATH
+- JSON file with disease descriptions and treatment recommendations
+- Loaded by web app to show helpful info to users
+
+================================================================================
+MODEL SETTINGS SECTION (Lines 48-56)
+================================================================================
+
+Line 50: MODEL_NAME = "resnet50"
+- Which architecture to use
+- ResNet50 = 50-layer Residual Network (proven, reliable)
+- Could change to "resnet101" (deeper) or "efficientnet" (newer)
+
+Line 51: USE_PRETRAINED = True
+- Transfer learning: start with ImageNet weights
+- ImageNet = 1.4M images, 1000 classes (animals, objects, etc.)
+- Model already learned edges, textures, shapes from ImageNet
+- We just fine-tune for plant diseases (much faster than training from scratch)
+
+Line 52: FREEZE_BACKBONE = True
+- "Backbone" = convolutional layers (feature extractors)
+- Freezing = don't update these weights during training
+- Only train the final classification layers
+- Why: Backbone already good at extracting features, saves time
+- Can set to False later for fine-tuning if needed
+
+Line 55: HIDDEN_UNITS = 512
+- Size of the hidden layer in classifier head
+- Flow: features (2048) → hidden layer (512) → output (num_classes)
+- 512 = good balance between capacity and overfitting
+- Larger = more powerful but may overfit, smaller = simpler but may underfit
+
+Line 56: DROPOUT_RATE = 0.5
+- Dropout = randomly turn off 50% of neurons during training
+- Prevents overfitting (model memorizing training data)
+- During inference, all neurons active (dropout disabled automatically)
+- 0.5 = standard value, works well in practice
+
+================================================================================
+TRAINING HYPERPARAMETERS SECTION (Lines 60-76)
+================================================================================
+
+Line 62: NUM_EPOCHS = 10
+- Epoch = one complete pass through the entire training dataset
+- 10 epochs = model sees each image 10 times
+- More epochs = more learning, but diminishing returns after a point
+- Can cause overfitting if too many
+
+Line 65: BATCH_SIZE = 32
+- Number of images processed together in parallel
+- Larger batch = faster training but needs more GPU memory
+- Smaller batch = slower but fits in less memory
+- 32 = good default for RTX 3050 (4GB VRAM)
+- If you get "out of memory" errors, reduce to 16
+
+Line 68: LEARNING_RATE = 0.001
+- Step size for updating model weights
+- Too large = model unstable, bounces around
+- Too small = model learns too slowly
+- 0.001 = standard starting point for Adam optimizer
+- Gets reduced during training (see next settings)
+
+Line 69: LR_STEP_SIZE = 5
+- Reduce learning rate every 5 epochs
+- Why: Start with big steps, then fine-tune with small steps
+- Like searching: broad exploration, then narrow refinement
+
+Line 70: LR_GAMMA = 0.1
+- Factor to multiply learning rate by
+- After 5 epochs: LR = 0.001 * 0.1 = 0.0001
+- After 10 epochs: LR = 0.0001 * 0.1 = 0.00001
+- Progressively smaller updates = better convergence
+
+Line 73: OPTIMIZER = "adam"
+- Optimization algorithm to update weights
+- Adam = Adaptive Moment Estimation (smart, adaptive learning rates)
+- Alternatives: SGD (simpler), AdamW (Adam with better weight decay)
+- Adam = best general-purpose choice
+
+Line 74: WEIGHT_DECAY = 1e-4
+- L2 regularization: penalize large weights
+- Prevents overfitting by keeping weights small
+- 1e-4 = 0.0001 (small penalty)
+
+================================================================================
+DATA PROCESSING SECTION (Lines 80-95)
+================================================================================
+
+Line 82: IMAGE_SIZE = (224, 224)
+- Resize all images to 224x224 pixels
+- Why 224? ResNet50 was designed for this size
+- All images must be same size for batch processing
+- Smaller images = faster but less detail
+- Larger images = slower but more detail
+
+Line 83-84: NORMALIZE_MEAN and NORMALIZE_STD
+- Normalize pixel values to standard distribution
+- These specific values are ImageNet statistics
+- Why: Pre-trained ResNet50 expects inputs in this range
+- Formula: normalized = (pixel - mean) / std
+- Converts pixel range from [0, 255] to roughly [-2, 2]
+
+Line 87-88: Data split ratios
+- TRAIN_SPLIT = 0.8 means 80% of data used for training
+- VAL_SPLIT = 0.2 means 20% used for validation
+- Validation = evaluate model during training (detect overfitting)
+- Note: We also have a separate TEST set for final evaluation
+
+Line 91-95: Data augmentation settings
+- RANDOM_ROTATION = 15: Rotate images up to 15 degrees
+  * Helps model handle photos taken at different angles
+- RANDOM_HORIZONTAL_FLIP: Randomly flip left-right
+  * Leaf on left vs right shouldn't matter
+- COLOR_JITTER_*: Randomly adjust brightness, contrast, saturation, hue
+  * Helps model handle different lighting conditions, cameras
+  * Values (0.2, 0.1) = how much to vary (20%, 10%)
+
+Why augmentation?
+- Artificially expands dataset without collecting more images
+- Makes model robust to variations it will see in real world
+- Prevents overfitting to specific image characteristics
+
+================================================================================
+DATA LOADING SECTION (Lines 99-106)
+================================================================================
+
+Line 101: NUM_WORKERS = 4
+- Number of parallel processes loading data
+- While GPU trains on batch N, workers prepare batch N+1
+- 4 = good for most systems (adjust based on CPU cores)
+- 0 = single process (slower, but easier to debug)
+
+Line 102: PIN_MEMORY = True
+- Pins memory on CPU for faster transfer to GPU
+- Only useful if training on GPU
+- Small memory cost for significant speed boost
+
+Line 103: PREFETCH_FACTOR = 2
+- Number of batches to load in advance per worker
+- 2 = load 2 batches ahead
+- Higher = faster but more memory
+
+Line 104: PERSISTENT_WORKERS = True
+- Keep worker processes alive between epochs
+- Avoids overhead of creating/destroying processes
+- Faster training, especially for multi-epoch runs
+
+================================================================================
+HARDWARE SETTINGS SECTION (Lines 110-115)
+================================================================================
+
+Line 112: DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+- Automatically detect if GPU is available
+- "cuda" = NVIDIA GPU (your RTX 3050)
+- "cpu" = fallback if no GPU
+- All tensors will be moved to this device
+
+Line 115: USE_MIXED_PRECISION = True if torch.cuda.is_available() else False
+- Mixed precision = use float16 instead of float32 for some operations
+- Float16 = half the memory, ~2x faster on modern GPUs
+- Slight accuracy loss but usually negligible
+- Only works on GPU with Tensor Cores (your RTX 3050 has them)
+
+================================================================================
+TRAINING SETTINGS SECTION (Lines 119-130)
+================================================================================
+
+Line 121: SAVE_EVERY_N_EPOCHS = 5
+- Save model checkpoint every 5 epochs
+- Checkpoint = snapshot of weights at that point
+- Useful if training crashes or you want to compare different epochs
+
+Line 122: SAVE_BEST_MODEL = True
+- Track validation accuracy each epoch
+- Save model only when it improves
+- Result: final saved model is the best one from training
+
+Line 125-126: Early stopping settings
+- PATIENCE = 10: Stop if no improvement for 10 epochs
+- MIN_DELTA = 0.001: Improvement must be > 0.1% to count
+- Prevents wasting time when model has converged
+
+Line 129: LOG_EVERY_N_BATCHES = 50
+- Print progress update every 50 batches
+- Too frequent = cluttered logs
+- Too infrequent = can't track progress
+- 50 = good balance for most datasets
+
+================================================================================
+DATABASE SETTINGS SECTION (Lines 134-135)
+================================================================================
+
+Line 135: DATABASE_PATH = PROJECT_ROOT / "vanaspati.db"
+- SQLite database file location
+- Will store: predictions, user uploads, timestamps, confidence scores
+- .db extension = SQLite database
+- Created automatically when first accessed
+
+================================================================================
+API SETTINGS SECTION (Lines 139-147)
+================================================================================
+
+Line 141-143: FastAPI server settings
+- API_HOST = "0.0.0.0": Listen on all network interfaces
+  * Allows access from other devices on same network
+- API_PORT = 8000: Port number (standard for dev APIs)
+- API_RELOAD = True: Auto-restart when code changes (development only)
+
+Line 146: MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+- 10 MB maximum upload size
+- Prevents abuse (uploading huge files)
+- 10 MB = plenty for high-res plant images
+
+Line 147: ALLOWED_EXTENSIONS
+- Only accept these image formats
+- Security: prevent uploading executables or malicious files
+- .JPG, .JPEG, .PNG = standard image formats
+
+================================================================================
+INFERENCE SETTINGS SECTION (Lines 151-154)
+================================================================================
+
+Line 153: CONFIDENCE_THRESHOLD = 0.5
+- Only show predictions with > 50% confidence
+- Below threshold = model is uncertain, don't show
+- Prevents misleading low-confidence predictions
+
+Line 154: TOP_K_PREDICTIONS = 3
+- Show top 3 most likely diseases
+- Useful if model uncertain between several options
+- User can see alternatives and make informed decision
+
+================================================================================
+VALIDATION METHODS SECTION (Lines 158-201)
+================================================================================
+
+Line 159-169: validate_paths() method
+- @classmethod = method that operates on class, not instance
+- Creates required directories if they don't exist
+- mkdir(parents=True) = create parent directories too
+- exist_ok=True = don't error if already exists
+- Returns True when done (for confirmation)
+
+Line 171-185: get_data_directories() method
+- Returns list of directories containing training data
+- Only includes directories that actually exist
+- Why: Some users might not have both datasets
+- Code can adapt based on what's available
+
+Line 187-201: print_config() method
+- Pretty-prints current configuration
+- Useful for:
+  * Verifying settings before training
+  * Logging configuration with experiment results
+  * Debugging when something goes wrong
+- Shows most important settings at a glance
+
+================================================================================
+SINGLETON INSTANCE (Line 205)
+================================================================================
+
+Line 205: config = Config()
+- Create one instance for entire project
+- Import like: from config import config
+- Then access: config.BATCH_SIZE, config.DEVICE, etc.
+- Singleton pattern = one global configuration object
+
+================================================================================
+DEVELOPMENT VS PRODUCTION CONFIGS (Lines 209-224)
+================================================================================
+
+Line 210-214: DevelopmentConfig class
+- Inherits from Config (gets all default settings)
+- Overrides specific settings for development:
+  * NUM_EPOCHS = 5: Faster iterations when testing
+  * LOG_EVERY_N_BATCHES = 10: More frequent progress updates
+  * API_RELOAD = True: Auto-restart server on changes
+
+Line 217-222: ProductionConfig class
+- Optimized for deployment:
+  * NUM_EPOCHS = 20: More training for better accuracy
+  * USE_MIXED_PRECISION = True: Faster inference
+  * API_RELOAD = False: No auto-restart (stability)
+  * SAVE_EVERY_N_EPOCHS = 10: Less frequent checkpoints (save space)
+
+Line 226-231: Environment selection
+- os.getenv("ENV", "development"): Read ENV environment variable
+- Default to "development" if not set
+- Set ENV=production before deployment
+- active_config = correct config based on environment
+
+================================================================================
+HOW TO USE THIS FILE
+================================================================================
+
+In any other script:
+```python
+from config import config
+
+# Access settings
+print(config.DEVICE)  # "cuda" or "cpu"
+print(config.BATCH_SIZE)  # 32
+
+# Use in code
+model.to(config.DEVICE)
+dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE)
+```
+
+To modify settings:
+1. Open config.py
+2. Change the value
+3. Save file
+4. Run training again
+
+To experiment with different settings:
+1. Copy config.py to config_experiment1.py
+2. Modify values
+3. Import from config_experiment1 instead
+
+================================================================================
+KEY TAKEAWAYS
+================================================================================
+
+1. ONE SOURCE OF TRUTH: All settings in one file
+2. ORGANIZED: Grouped by purpose (paths, training, data, etc.)
+3. DOCUMENTED: Comments explain what each setting does
+4. FLEXIBLE: Easy to create different configs for different scenarios
+5. VALIDATED: Methods to check paths exist and print current settings
+6. ENVIRONMENT-AWARE: Different settings for development vs production
+
+This file is the foundation. Every other script will import from here.
