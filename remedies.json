@@ -1,47 +1,452 @@
 {
-  "Pepper__bell___Bacterial_spot": {
-    "description": "Bacterial spot is a common disease of peppers and tomatoes. It is caused by several species of Xanthomonas bacteria. The disease can cause spots on leaves, stems, and fruits. The spots are initially small, water-soaked, and circular. They later become dark and sunken. The disease can lead to defoliation and reduced yield.",
+  "Apple___Apple_scab": {
+    "description": "Apple scab causes olive to dark brown velvety spots on leaves and fruit, leading to distortion and premature drop in wet spring weather.",
     "remedies": [
-      "Remove and destroy infected plant parts.",
-      "Avoid overhead watering.",
-      "Use copper-based bactericides.",
-      "Plant resistant varieties."
+      "Prune to open the canopy and improve air flow.",
+      "Collect and discard fallen leaves and fruit.",
+      "Apply preventive fungicides at green tip through early fruit set.",
+      "Choose scab-resistant cultivars when replanting."
+    ]
+  },
+  "Apple___Black_rot": {
+    "description": "Black rot on apple starts as purple leaf spots with brown centers and causes dark concentric rot on fruit and cankers on limbs.",
+    "remedies": [
+      "Prune out cankers 6-8 inches below visible damage.",
+      "Remove mummified fruit and fallen debris.",
+      "Use a dormant copper spray on pruning wounds if pressure is high.",
+      "Maintain balanced fertilization to reduce stress."
+    ]
+  },
+  "Apple___Cedar_apple_rust": {
+    "description": "Cedar apple rust produces orange leaf spots with yellow halos and can cause defoliation; spores come from nearby junipers.",
+    "remedies": [
+      "Remove or prune infected juniper galls within 1-2 miles if possible.",
+      "Apply protectant fungicides at pink to petal-fall stages.",
+      "Plant rust-resistant apple varieties.",
+      "Rake and discard infected leaves to lower inoculum."
+    ]
+  },
+  "Apple___healthy": {
+    "description": "No visible apple leaf disease detected; foliage appears healthy.",
+    "remedies": [
+      "Maintain regular scouting after rains.",
+      "Keep trees pruned for light and airflow.",
+      "Apply balanced nutrition and avoid overwatering.",
+      "Remove fallen leaves and fruit to prevent future outbreaks."
+    ]
+  },
+  "Blueberry___healthy": {
+    "description": "Blueberry leaves look healthy with no disease symptoms.",
+    "remedies": [
+      "Mulch to conserve moisture and reduce soil splash.",
+      "Irrigate at the base, not overhead.",
+      "Monitor for mummy berry and leaf spot after wet periods.",
+      "Prune for airflow each winter."
+    ]
+  },
+  "Cherry_(including_sour)___Powdery_mildew": {
+    "description": "Powdery mildew on cherry shows as white powdery patches on young leaves and shoots, causing curl and reduced vigor.",
+    "remedies": [
+      "Prune dense growth to lower humidity in the canopy.",
+      "Apply sulfur or other labeled fungicides at first signs.",
+      "Avoid excess nitrogen that drives lush, susceptible shoots.",
+      "Remove infected shoots during dormancy."
+    ]
+  },
+  "Cherry_(including_sour)___healthy": {
+    "description": "Cherry leaves appear healthy with no disease symptoms.",
+    "remedies": [
+      "Maintain pruning for airflow and light.",
+      "Irrigate at soil level to keep foliage dry.",
+      "Scout after rainy spells for mildew or leaf spot.",
+      "Keep the orchard floor clean of fallen debris."
+    ]
+  },
+  "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {
+    "description": "Gray leaf spot causes rectangular gray lesions between veins, reducing photosynthesis and yield in humid weather.",
+    "remedies": [
+      "Rotate away from corn for at least one season.",
+      "Use hybrid varieties with gray leaf spot resistance.",
+      "Apply foliar fungicide at VT-R1 if disease risk is high.",
+      "Avoid dense plantings that trap humidity."
+    ]
+  },
+  "Corn_(maize)___Common_rust_": {
+    "description": "Common rust forms cinnamon-brown pustules on both leaf surfaces, usually in cooler, humid conditions.",
+    "remedies": [
+      "Plant rust-resistant hybrids when available.",
+      "Scout at V8-VT; treat with fungicide if pustules are widespread.",
+      "Avoid overhead irrigation that prolongs leaf wetness.",
+      "Maintain balanced fertility to support plant vigor."
+    ]
+  },
+  "Corn_(maize)___Northern_Leaf_Blight": {
+    "description": "Northern leaf blight creates long, cigar-shaped gray-green lesions that coalesce and reduce grain fill.",
+    "remedies": [
+      "Select hybrids with NLB resistance ratings.",
+      "Rotate crops and manage corn residue to cut inoculum.",
+      "Apply fungicide at VT-R1 if lesions appear on upper canopy.",
+      "Avoid excessive plant density that limits airflow."
+    ]
+  },
+  "Corn_(maize)___healthy": {
+    "description": "Corn foliage appears clean with no major leaf disease.",
+    "remedies": [
+      "Continue scouting through tasseling.",
+      "Use residue management and rotation to prevent new infections.",
+      "Irrigate early in the day to dry foliage quickly.",
+      "Maintain fertility based on soil tests."
+    ]
+  },
+  "Grape___Black_rot": {
+    "description": "Black rot causes tan leaf lesions with dark margins and black fruit mummies that shrivel clusters.",
+    "remedies": [
+      "Remove mummified berries and infected tendrils during pruning.",
+      "Apply protectant fungicides from 3-5 inch shoot growth through pea-size berries.",
+      "Open the canopy with timely shoot thinning.",
+      "Mow or manage weeds to improve airflow."
+    ]
+  },
+  "Grape___Esca_(Black_Measles)": {
+    "description": "Esca (black measles) shows tiger-striped leaf patterns, berry spotting, and chronic decline in vines.",
+    "remedies": [
+      "Prune out and destroy dead spurs and cordons.",
+      "Avoid large pruning wounds in wet weather; use clean tools.",
+      "Maintain vine vigor with proper irrigation and nutrition.",
+      "Remove and replace severely declining vines."
+    ]
+  },
+  "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": {
+    "description": "Isariopsis leaf spot causes angular dark lesions on grape leaves that can drop early in humid seasons.",
+    "remedies": [
+      "Thin shoots to lower canopy humidity.",
+      "Apply labeled fungicides when wet weather persists.",
+      "Remove fallen leaves after harvest to reduce spores.",
+      "Irrigate at the base instead of overhead."
+    ]
+  },
+  "Grape___healthy": {
+    "description": "Grape foliage looks healthy with no disease symptoms.",
+    "remedies": [
+      "Keep up with canopy management for airflow.",
+      "Monitor after rains for black rot or downy mildew.",
+      "Avoid overfertilizing with nitrogen.",
+      "Sanitize pruning tools between blocks."
+    ]
+  },
+  "Orange___Haunglongbing_(Citrus_greening)": {
+    "description": "Citrus greening (HLB) causes blotchy mottled leaves, misshapen bitter fruit, and tree decline, spread by Asian citrus psyllid.",
+    "remedies": [
+      "Remove and destroy confirmed infected trees to slow spread.",
+      "Control psyllids with approved insecticides and biological agents.",
+      "Use certified disease-free nursery stock for new plantings.",
+      "Provide balanced nutrition to support remaining trees."
+    ]
+  },
+  "Peach___Bacterial_spot": {
+    "description": "Bacterial spot on peach causes angular leaf spots, shot-hole, and pitted fruit, favored by wind-driven rain.",
+    "remedies": [
+      "Plant tolerant cultivars when possible.",
+      "Apply copper or other labeled bactericides starting at petal fall.",
+      "Avoid overhead irrigation and reduce leaf wetness.",
+      "Remove severely infected twigs during dormancy."
+    ]
+  },
+  "Peach___healthy": {
+    "description": "Peach foliage appears clean with no visible disease.",
+    "remedies": [
+      "Prune to an open center to dry leaves quickly.",
+      "Monitor after storms for bacterial spot or curl.",
+      "Maintain groundcover to reduce soil splash.",
+      "Keep nutrition moderate to prevent lush, susceptible growth."
+    ]
+  },
+  "Pepper,_bell___Bacterial_spot": {
+    "description": "Bacterial spot on bell pepper creates small water-soaked lesions that darken and scab, reducing yield.",
+    "remedies": [
+      "Remove infected leaves and fruit promptly.",
+      "Avoid overhead irrigation; drip is best.",
+      "Apply copper-based bactericides preventively in wet periods.",
+      "Use certified seed and resistant varieties where available."
+    ]
+  },
+  "Pepper,_bell___healthy": {
+    "description": "Bell pepper foliage looks healthy with no disease symptoms.",
+    "remedies": [
+      "Water at soil level to keep leaves dry.",
+      "Scout weekly for spots after rain or overhead moisture.",
+      "Remove lower leaves touching soil to reduce splash infection.",
+      "Rotate peppers away from solanaceous crops yearly."
+    ]
+  },
+  "Pepper__bell___Bacterial_spot": {
+    "description": "Bacterial spot on pepper causes dark, sunken lesions on leaves and fruit, often following warm rains.",
+    "remedies": [
+      "Prune heavily infected leaves to slow spread.",
+      "Use copper sprays at label intervals during wet weather.",
+      "Disinfect stakes and tools between plots.",
+      "Avoid working plants when foliage is wet."
+    ]
+  },
+  "Pepper__bell___healthy": {
+    "description": "Pepper leaves appear healthy with no active disease.",
+    "remedies": [
+      "Maintain drip irrigation and avoid leaf wetness.",
+      "Mulch to limit soil splash onto lower leaves.",
+      "Scout for early lesions; remove any suspicious leaves.",
+      "Rotate with non-solanaceous crops yearly."
     ]
   },
   "Potato___Early_blight": {
-    "description": "Early blight is a fungal disease of potatoes and tomatoes caused by Alternaria solani. The disease causes dark, circular lesions on leaves, stems, and tubers. The lesions have a characteristic 'target spot' appearance. The disease can cause defoliation and reduced yield.",
+    "description": "Early blight on potato shows concentric brown target spots on older leaves, leading to defoliation and smaller tubers.",
     "remedies": [
-      "Remove and destroy infected plant parts.",
-      "Use fungicides such as chlorothalonil or mancozeb.",
-      "Practice crop rotation.",
-      "Plant resistant varieties."
+      "Remove infected foliage and volunteer potatoes.",
+      "Apply protectant fungicides at row closure and after rain.",
+      "Rotate out of potatoes and tomatoes for 2-3 years.",
+      "Avoid overhead irrigation late in the day."
+    ]
+  },
+  "Potato___Late_blight": {
+    "description": "Late blight causes water-soaked lesions with white fuzz on undersides, rapidly collapsing foliage and tubers.",
+    "remedies": [
+      "Destroy cull piles and volunteers before planting.",
+      "Apply systemic + protectant fungicides at first risk forecast.",
+      "Ensure good field drainage to reduce leaf wetness.",
+      "Burn down vines before harvest if infection is present."
+    ]
+  },
+  "Potato___healthy": {
+    "description": "Potato canopy looks healthy with no major leaf disease.",
+    "remedies": [
+      "Hill soil to reduce tuber exposure and splash.",
+      "Scout twice weekly during cool, wet periods.",
+      "Use drip or morning irrigation to dry foliage quickly.",
+      "Rotate crops to limit early and late blight pressure."
+    ]
+  },
+  "Raspberry___healthy": {
+    "description": "Raspberry foliage appears healthy with no disease symptoms.",
+    "remedies": [
+      "Prune canes to improve airflow and light.",
+      "Remove spent floricanes promptly after harvest.",
+      "Irrigate at the base to keep leaves dry.",
+      "Monitor for cane blights and leaf spots after rain."
+    ]
+  },
+  "Soybean___healthy": {
+    "description": "Soybean leaves are healthy with no visible disease.",
+    "remedies": [
+      "Scout during R stages for rust or blight.",
+      "Rotate crops and manage residue to lower inoculum.",
+      "Maintain recommended plant populations for airflow.",
+      "Use resistant varieties appropriate for local pressures."
+    ]
+  },
+  "Squash___Powdery_mildew": {
+    "description": "Powdery mildew forms white powdery colonies on squash leaves and petioles, reducing vigor and yield.",
+    "remedies": [
+      "Start fungicide or biocontrol sprays at first white spots.",
+      "Select tolerant varieties and plant in full sun.",
+      "Remove badly infected leaves to slow spread.",
+      "Avoid excess nitrogen that fuels lush growth."
+    ]
+  },
+  "Strawberry___Leaf_scorch": {
+    "description": "Leaf scorch on strawberry causes small purple spots that merge into reddish-brown blotches, leading to dry, scorched leaves.",
+    "remedies": [
+      "Remove old leaves after harvest to lower inoculum.",
+      "Irrigate early in the day and avoid wetting leaves at night.",
+      "Apply labeled fungicides if spots expand rapidly.",
+      "Space plants for airflow and thin runners."
+    ]
+  },
+  "Strawberry___healthy": {
+    "description": "Strawberry foliage looks healthy with no leaf spot or scorch.",
+    "remedies": [
+      "Keep beds weed-free and well-mulched.",
+      "Water at soil level to keep leaves dry.",
+      "Remove old leaves after fruiting to renew the canopy.",
+      "Watch for mites and early leaf spots in humid spells."
     ]
   },
   "Tomato_Bacterial_spot": {
-    "description": "Bacterial spot of tomato is caused by four species of Xanthomonas. The disease causes spots on leaves, stems, and fruits. The spots are initially small, water-soaked, and circular. They later become dark and sunken. The disease can lead to defoliation and reduced yield.",
+    "description": "Bacterial spot on tomato causes small water-soaked lesions that turn dark and may scab fruit, spreading in warm, wet weather.",
     "remedies": [
-      "Remove and destroy infected plant parts.",
-      "Avoid overhead watering.",
-      "Use copper-based bactericides.",
-      "Plant resistant varieties."
+      "Prune lower leaves to reduce soil splash.",
+      "Apply copper or other labeled bactericides preventively.",
+      "Avoid handling plants when foliage is wet.",
+      "Use certified seed and rotate away from solanaceous crops."
+    ]
+  },
+  "Tomato_Early_blight": {
+    "description": "Early blight shows target-like concentric spots on older leaves, causing yellowing and defoliation.",
+    "remedies": [
+      "Remove infected lower leaves as they appear.",
+      "Stake or cage plants to improve airflow.",
+      "Apply protectant fungicides at first lesions, especially after rain.",
+      "Mulch soil to block splash of spores."
     ]
   },
   "Tomato_Late_blight": {
-    "description": "Late blight is a devastating disease of tomatoes and potatoes caused by the oomycete Phytophthora infestans. The disease can cause large, water-soaked lesions on leaves, stems, and fruits. The lesions can spread rapidly and destroy the entire plant. The disease is favored by cool, moist weather.",
+    "description": "Late blight creates greasy, water-soaked lesions with white growth on undersides, rapidly killing foliage and fruit.",
     "remedies": [
-      "Remove and destroy infected plant parts.",
-      "Use fungicides such as chlorothalonil, mancozeb, or metalaxyl.",
-      "Avoid overhead watering.",
-      "Ensure good air circulation around plants."
+      "Cull volunteers and discard infected debris off-site.",
+      "Begin fungicide program when conditions favor blight or alerts are issued.",
+      "Avoid overhead irrigation and improve drainage.",
+      "Remove and destroy infected plants quickly to slow spread."
+    ]
+  },
+  "Tomato_Leaf_Mold": {
+    "description": "Leaf mold causes yellow patches on upper surfaces and olive mold underneath in humid, greenhouse-like conditions.",
+    "remedies": [
+      "Ventilate and reduce humidity in covered structures.",
+      "Remove infected leaves and improve plant spacing.",
+      "Apply labeled fungicides if humidity remains high.",
+      "Water at the base early in the day."
+    ]
+  },
+  "Tomato_Septoria_leaf_spot": {
+    "description": "Septoria leaf spot shows many small dark spots with light centers on lower leaves, leading to rapid defoliation.",
+    "remedies": [
+      "Strip severely spotted lower leaves to slow spread.",
+      "Stake plants and mulch to limit splash infection.",
+      "Rotate out of tomatoes for 2+ years.",
+      "Use protectant fungicides at first spotting."
+    ]
+  },
+  "Tomato_Spider_mites_Two_spotted_spider_mite": {
+    "description": "Two-spotted spider mites cause stippling, bronzing, and webbing on tomato leaves, thriving in hot, dry weather.",
+    "remedies": [
+      "Spray undersides of leaves with a strong water jet to knock mites off.",
+      "Release or conserve predatory mites if available.",
+      "Use miticides labeled for tomatoes when thresholds are exceeded.",
+      "Avoid dust and drought stress; irrigate consistently."
+    ]
+  },
+  "Tomato__Target_Spot": {
+    "description": "Target spot creates brown lesions with concentric rings on leaves and fruit, leading to drop in humid tropic-like conditions.",
+    "remedies": [
+      "Remove infected leaves and fruit promptly.",
+      "Improve airflow with pruning and wider spacing.",
+      "Apply fungicides effective on Corynespora/target spot when conditions favor disease.",
+      "Avoid prolonged leaf wetness from overhead irrigation."
     ]
   },
   "Tomato__Tomato_YellowLeaf__Curl_Virus": {
-    "description": "Tomato yellow leaf curl virus (TYLCV) is a DNA virus from the genus Begomovirus. It is transmitted by whiteflies. The virus causes stunting, upward curling of leaves, and yellowing of leaf margins. The disease can cause severe yield losses.",
+    "description": "Tomato yellow leaf curl virus causes upward curling leaves, yellowing, and stunting, spread by whiteflies.",
     "remedies": [
-      "Control whitefly populations with insecticides.",
-      "Use reflective mulches to repel whiteflies.",
-      "Remove and destroy infected plants.",
-      "Plant resistant varieties."
+      "Control whiteflies with reflective mulch and labeled insecticides.",
+      "Remove infected plants to reduce virus sources.",
+      "Use resistant varieties when available.",
+      "Exclude whiteflies with fine mesh in protected culture."
+    ]
+  },
+  "Tomato__Tomato_mosaic_virus": {
+    "description": "Tomato mosaic virus causes mottled leaves, leaf narrowing, and rough fruit; it spreads mechanically and by seed.",
+    "remedies": [
+      "Discard symptomatic plants; there is no cure.",
+      "Disinfect tools and hands (e.g., milk or bleach solution) between plants.",
+      "Use certified virus-free seed and avoid tobacco handling near plants.",
+      "Sanitize stakes and trays between seasons."
+    ]
+  },
+  "Tomato___Bacterial_spot": {
+    "description": "Bacterial spot on tomato creates dark, greasy-looking leaf spots and pitted fruit in warm, rainy periods.",
+    "remedies": [
+      "Rotate out of tomatoes and peppers for 2-3 years.",
+      "Apply copper-based sprays at label intervals during wet spells.",
+      "Remove heavily infected foliage to slow spread.",
+      "Avoid working in the crop when leaves are wet."
+    ]
+  },
+  "Tomato___Early_blight": {
+    "description": "Early blight forms concentric rings on older leaves, moving upward and reducing yield if unchecked.",
+    "remedies": [
+      "Mulch and stake plants to reduce soil splash.",
+      "Begin fungicide program at first lesions and after heavy rain.",
+      "Remove lower diseased leaves regularly.",
+      "Rotate away from nightshades for multiple years."
+    ]
+  },
+  "Tomato___Late_blight": {
+    "description": "Late blight rapidly blights foliage and fruit with water-soaked lesions and white sporulation under cool, moist conditions.",
+    "remedies": [
+      "Destroy infected plants immediately and dispose off-site.",
+      "Apply recommended systemic plus protectant fungicides at risk alerts.",
+      "Avoid overhead irrigation and improve air movement.",
+      "Do not save seed or tubers from infected plants."
+    ]
+  },
+  "Tomato___Leaf_Mold": {
+    "description": "Leaf mold shows yellow patches above and olive fuzzy growth beneath leaves, common in humid houses or dense plantings.",
+    "remedies": [
+      "Ventilate tunnels/greenhouses to drop humidity.",
+      "Remove infected leaves and thin foliage.",
+      "Use fungicides labeled for leaf mold when humidity stays high.",
+      "Water at soil level in the morning."
+    ]
+  },
+  "Tomato___Septoria_leaf_spot": {
+    "description": "Septoria leaf spot causes numerous small spots with tan centers and dark borders, quickly defoliating plants.",
+    "remedies": [
+      "Strip lower infected leaves early and dispose away from the field.",
+      "Maintain mulch and staking to reduce splash.",
+      "Apply protectant fungicides on a 7-10 day interval under pressure.",
+      "Rotate out of tomatoes for 2-3 years."
+    ]
+  },
+  "Tomato___Spider_mites Two-spotted_spider_mite": {
+    "description": "Two-spotted spider mites stipple and bronze tomato leaves, with fine webbing in hot, dry weather.",
+    "remedies": [
+      "Spray leaf undersides with water to knock mites back.",
+      "Introduce or conserve predatory mites where feasible.",
+      "Use miticides according to thresholds and rotate modes of action.",
+      "Reduce dust and drought stress with mulch and irrigation."
+    ]
+  },
+  "Tomato___Target_Spot": {
+    "description": "Target spot leads to brown lesions with concentric rings on leaves and fruit, thriving in warm, humid conditions.",
+    "remedies": [
+      "Remove infected foliage and fruit to cut inoculum.",
+      "Improve airflow by pruning and wider spacing.",
+      "Apply fungicides effective on target spot when humidity is high.",
+      "Avoid extended leaf wetness from overhead irrigation."
+    ]
+  },
+  "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+    "description": "Tomato yellow leaf curl virus stunts plants and curls leaves upward with pronounced yellowing, spread by whiteflies.",
+    "remedies": [
+      "Control whiteflies with insecticides and reflective mulches.",
+      "Rogue infected plants to lower virus sources.",
+      "Use resistant or tolerant varieties when available.",
+      "Exclude vectors with insect netting in protected culture."
+    ]
+  },
+  "Tomato___Tomato_mosaic_virus": {
+    "description": "Tomato mosaic virus produces mottling, leaf narrowing, and rough fruit, spreading by touch, seed, and tools.",
+    "remedies": [
+      "Remove symptomatic plants; there is no curative spray.",
+      "Sanitize hands, tools, and stakes frequently.",
+      "Use certified clean seed and avoid tobacco handling near plants.",
+      "Rotate and disinfect greenhouse surfaces between crops."
+    ]
+  },
+  "Tomato___healthy": {
+    "description": "Tomato leaves look healthy with no disease symptoms detected.",
+    "remedies": [
+      "Maintain staking/trellising for airflow.",
+      "Mulch and water at the base to keep leaves dry.",
+      "Scout twice weekly, especially after rain or high humidity.",
+      "Fertilize moderately to avoid lush, disease-prone growth."
+    ]
+  },
+  "Tomato_healthy": {
+    "description": "Tomato foliage appears healthy; no signs of stress or disease.",
+    "remedies": [
+      "Continue routine scouting and sanitation.",
+      "Irrigate in the morning to dry foliage quickly.",
+      "Prune lower leaves that touch soil to prevent splash infections.",
+      "Rotate crops each season to reduce pathogen load."
     ]
   }
 }

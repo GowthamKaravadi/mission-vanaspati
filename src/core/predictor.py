@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Union
 
 import torch
-from PIL import Image
+import numpy as np
+from PIL import Image, ImageFilter
 
 from src.core.model import load_model
 from src.core.dataset import get_val_transforms
@@ -49,6 +50,59 @@ class PlantDiseasePredictor:
         idx_to_class = {v: k for k, v in class_to_idx.items()}
         return idx_to_class
     
+    def _is_plant_image(self, image: Image.Image) -> Tuple[bool, str]:
+        """
+        Check if image contains plant-like characteristics.
+        Returns (is_plant, reason)
+        """
+        # Convert to numpy array
+        img_array = np.array(image)
+        
+        # Check if image is too uniform (like text on paper or solid colors)
+        std_dev = np.std(img_array)
+        if std_dev < 20:
+            return False, "Image appears to be too uniform (text, drawing, or solid color), not a natural photograph"
+        
+        # Check for green pixels (plants typically have green)
+        r, g, b = img_array[:,:,0], img_array[:,:,1], img_array[:,:,2]
+        
+        # Green dominant pixels (typical for plant leaves)
+        green_dominant = (g > r) & (g > b) & (g > 50)
+        green_ratio = np.sum(green_dominant) / (img_array.shape[0] * img_array.shape[1])
+        
+        # Plant images should have at least 10% green pixels
+        if green_ratio < 0.10:
+            return False, "Image does not contain sufficient plant-like colors. Please upload a photo of a plant leaf."
+        
+        # Check for texture complexity (leaves have veins and texture)
+        # Convert to grayscale for edge detection
+        gray_image = image.convert('L')
+        edges = gray_image.filter(ImageFilter.FIND_EDGES)
+        edge_array = np.array(edges)
+        edge_density = np.sum(edge_array > 30) / (edge_array.shape[0] * edge_array.shape[1])
+        
+        # Leaves have moderate edge density (0.05 to 0.4)
+        # Too few edges = solid color object, too many = text/noise
+        if edge_density < 0.05:
+            return False, "Image appears to be a solid colored object, not a natural leaf. Please upload a photo of a plant leaf with visible texture."
+        
+        if edge_density > 0.5:
+            return False, "Image contains too much noise or text patterns, not a natural photograph"
+        
+        # Check color variance in green channel - leaves have variation
+        green_channel = img_array[:,:,1]
+        green_std = np.std(green_channel)
+        if green_std < 15:
+            return False, "Image has uniform green color (like painted surface), not a natural leaf with texture variation"
+        
+        # Check aspect ratio - extremely wide/tall images are suspicious
+        width, height = image.size
+        aspect_ratio = max(width, height) / min(width, height)
+        if aspect_ratio > 5:
+            return False, "Image has unusual aspect ratio, not typical of plant photographs"
+        
+        return True, "Valid plant image"
+    
     def _preprocess_image(self, image: Union[str, Path, Image.Image]) -> torch.Tensor:
         if isinstance(image, (str, Path)):
             image = Image.open(image).convert('RGB')
@@ -65,7 +119,25 @@ class PlantDiseasePredictor:
         image: Union[str, Path, Image.Image],
         return_all: bool = False
     ) -> Dict[str, any]:
-        tensor = self._preprocess_image(image).to(self.device)
+        # Load image if needed
+        if isinstance(image, (str, Path)):
+            pil_image = Image.open(image).convert('RGB')
+        else:
+            pil_image = image.convert('RGB')
+        
+        # First check if it's actually a plant image
+        is_plant, reason = self._is_plant_image(pil_image)
+        if not is_plant:
+            result = {
+                'class_name': 'Not a plant image',
+                'class_idx': -1,
+                'confidence': 0.0,
+                'error': reason,
+                'is_plant': False
+            }
+            return result
+        
+        tensor = self._preprocess_image(pil_image).to(self.device)
         
         with torch.no_grad():
             logits = self.model(tensor)
@@ -77,6 +149,7 @@ class PlantDiseasePredictor:
             'class_name': self.idx_to_class.get(top_idx.item(), 'Unknown'),
             'class_idx': top_idx.item(),
             'confidence': top_prob.item(),
+            'is_plant': True
         }
         
         if return_all:
@@ -101,40 +174,69 @@ class PlantDiseasePredictor:
         images: List[Union[str, Path, Image.Image]],
         return_all: bool = False
     ) -> List[Dict[str, any]]:
-        tensors = [self._preprocess_image(img) for img in images]
-        batch = torch.cat(tensors, dim=0).to(self.device)
-        
-        with torch.no_grad():
-            logits = self.model(batch)
-            probabilities = torch.softmax(logits, dim=1)
-        
+        # First validate all images
+        pil_images = []
         results = []
-        for i in range(len(images)):
-            probs = probabilities[i]
-            top_prob, top_idx = probs.max(dim=0)
+        valid_indices = []
+        
+        for i, img in enumerate(images):
+            # Load image if needed
+            if isinstance(img, (str, Path)):
+                pil_image = Image.open(img).convert('RGB')
+            else:
+                pil_image = img.convert('RGB')
             
-            result = {
-                'class_name': self.idx_to_class.get(top_idx.item(), 'Unknown'),
-                'class_idx': top_idx.item(),
-                'confidence': top_prob.item(),
-            }
+            # Check if it's a plant image
+            is_plant, reason = self._is_plant_image(pil_image)
+            if not is_plant:
+                results.append({
+                    'class_name': 'Not a plant image',
+                    'class_idx': -1,
+                    'confidence': 0.0,
+                    'error': reason,
+                    'is_plant': False
+                })
+            else:
+                pil_images.append(pil_image)
+                valid_indices.append(i)
+                results.append(None)  # Placeholder
+        
+        # Process valid images
+        if pil_images:
+            tensors = [self._preprocess_image(img) for img in pil_images]
+            batch = torch.cat(tensors, dim=0).to(self.device)
             
-            if return_all:
-                top_k_probs, top_k_indices = probs.topk(self.top_k)
+            with torch.no_grad():
+                logits = self.model(batch)
+                probabilities = torch.softmax(logits, dim=1)
+            
+            for j, i in enumerate(valid_indices):
+                probs = probabilities[j]
+                top_prob, top_idx = probs.max(dim=0)
                 
-                top_k_predictions = []
-                for prob, idx in zip(top_k_probs, top_k_indices):
-                    prob_val = prob.item()
-                    if prob_val >= self.confidence_threshold:
-                        top_k_predictions.append({
-                            'class_name': self.idx_to_class.get(idx.item(), 'Unknown'),
-                            'class_idx': idx.item(),
-                            'confidence': prob_val,
-                        })
+                result = {
+                    'class_name': self.idx_to_class.get(top_idx.item(), 'Unknown'),
+                    'class_idx': top_idx.item(),
+                    'confidence': top_prob.item(),
+                    'is_plant': True
+                }
                 
-                result['top_k'] = top_k_predictions
-            
-            results.append(result)
+                if return_all:
+                    top_k_probs, top_k_indices = probs.topk(self.top_k)
+                    
+                    top_k_predictions = []
+                    for prob, idx in zip(top_k_probs, top_k_indices):
+                        prob_val = prob.item()
+                        if prob_val >= self.confidence_threshold:
+                            top_k_predictions.append({
+                                'class_name': self.idx_to_class.get(idx.item(), 'Unknown'),
+                                'class_idx': idx.item(),
+                                'confidence': prob_val,
+                            })
+                    
+                    result['top_k'] = top_k_predictions
+                
+                results[i] = result
         
         return results
     
@@ -163,60 +265,3 @@ class PlantDiseasePredictor:
             f"classes={self.num_classes}, "
             f"device={self.device})"
         )
-
-
-if __name__ == "__main__":
-    from config import active_config as cfg
-    
-    print("Testing Predictor...")
-    print()
-    
-    predictor = PlantDiseasePredictor(
-        model_path=cfg.MODEL_SAVE_PATH,
-        class_mapping_path=cfg.CLASS_MAPPING_PATH,
-        top_k=5
-    )
-    print()
-    
-    data_dirs = cfg.get_data_directories()
-    if data_dirs:
-        test_image = None
-        for data_dir in data_dirs:
-            for class_dir in data_dir.iterdir():
-                if class_dir.is_dir():
-                    for img_path in class_dir.iterdir():
-                        if img_path.suffix.lower() in ['.jpg', '.jpeg', '.png']:
-                            test_image = img_path
-                            break
-                    if test_image:
-                        break
-            if test_image:
-                break
-        
-        if test_image:
-            print(f"Testing with: {test_image}")
-            print()
-            
-            result = predictor.predict(test_image, return_all=True)
-            
-            print("Top Prediction:")
-            print(f"  Class: {result['class_name']}")
-            print(f"  Confidence: {result['confidence']:.2%}")
-            print()
-            
-            print("Top 5 Predictions:")
-            for i, pred in enumerate(result['top_k'], 1):
-                print(f"  {i}. {pred['class_name']}: {pred['confidence']:.2%}")
-            print()
-            
-            print("All available classes:")
-            classes = predictor.get_all_classes()
-            print(f"  Total: {len(classes)}")
-            print(f"  Sample: {classes[:5]}...")
-        else:
-            print("No test image found in dataset")
-    else:
-        print("No data directories found")
-    
-    print()
-    print("Predictor test complete!")

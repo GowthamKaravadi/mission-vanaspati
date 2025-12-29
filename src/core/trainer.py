@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from typing import Dict, Tuple, List, Optional
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -12,6 +13,26 @@ def _to_device(*tensors, device: torch.device):
     return [t.to(device, non_blocking=True) for t in tensors]
 
 
+def mixup_data(x: torch.Tensor, y: torch.Tensor, alpha: float = 0.2):
+    """Apply MixUp augmentation."""
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    index = torch.randperm(batch_size).to(x.device)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    """Compute loss for MixUp."""
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+
 def train_one_epoch(
     model: nn.Module,
     loader: DataLoader,
@@ -20,6 +41,8 @@ def train_one_epoch(
     device: torch.device,
     use_amp: bool = False,
     log_interval: int = 50,
+    use_mixup: bool = False,
+    mixup_alpha: float = 0.2,
 ) -> Tuple[float, float]:
     model.train()
     running_loss = 0.0
@@ -31,10 +54,17 @@ def train_one_epoch(
     for batch_idx, (images, labels) in enumerate(loader):
         images, labels = _to_device(images, labels, device=device)
 
+        # Apply MixUp augmentation
+        if use_mixup:
+            images, labels_a, labels_b, lam = mixup_data(images, labels, mixup_alpha)
+
         optimizer.zero_grad(set_to_none=True)
         with torch.cuda.amp.autocast(enabled=use_amp):
             outputs = model(images)
-            loss = criterion(outputs, labels)
+            if use_mixup:
+                loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
+            else:
+                loss = criterion(outputs, labels)
 
         scaler.scale(loss).backward()
         scaler.step(optimizer)
@@ -43,7 +73,13 @@ def train_one_epoch(
         running_loss += loss.item()
         _, predicted = outputs.max(1)
         total += labels.size(0)
-        correct += predicted.eq(labels).sum().item()
+        
+        # For MixUp, use the dominant label for accuracy calculation
+        if use_mixup:
+            correct += (lam * predicted.eq(labels_a).sum().item() + 
+                       (1 - lam) * predicted.eq(labels_b).sum().item())
+        else:
+            correct += predicted.eq(labels).sum().item()
 
         if (batch_idx + 1) % log_interval == 0:
             avg_loss = running_loss / (batch_idx + 1)
@@ -91,16 +127,31 @@ def train(
     epochs: int = 10,
     lr: float = 1e-3,
     weight_decay: float = 1e-4,
+    scheduler_type: str = "step",
     step_size: int = 5,
     gamma: float = 0.1,
+    lr_min: float = 1e-6,
     use_amp: bool = False,
     log_interval: int = 50,
     save_best: bool = True,
     checkpoint_path: Optional[str] = None,
+    use_mixup: bool = False,
+    mixup_alpha: float = 0.2,
+    two_stage: bool = False,
+    stage1_epochs: int = 5,
 ) -> Dict[str, List[float]]:
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    
+    # Create scheduler based on type
+    if scheduler_type == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=epochs, eta_min=lr_min
+        )
+    else:  # step
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=step_size, gamma=gamma
+        )
 
     history: Dict[str, List[float]] = {
         "train_loss": [],
@@ -114,8 +165,34 @@ def train(
     best_state: Optional[Dict[str, torch.Tensor]] = None
 
     print("Starting training...")
+    print(f"Optimizer: AdamW | Scheduler: {scheduler_type.upper()} | MixUp: {use_mixup}")
+    if two_stage:
+        print(f"Two-stage training: Stage 1 ({stage1_epochs} epochs) → Stage 2 ({epochs - stage1_epochs} epochs)")
+    
     for epoch in range(1, epochs + 1):
-        print(f"\nEpoch {epoch}/{epochs}")
+        # Two-stage training: freeze/unfreeze backbone
+        if two_stage and epoch == stage1_epochs + 1:
+            print("\n" + "="*70)
+            print("STAGE 2: Unfreezing backbone for full model fine-tuning")
+            print("="*70)
+            for param in model.parameters():
+                param.requires_grad = True
+            # Reset optimizer with unfrozen parameters
+            optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+            if scheduler_type == "cosine":
+                scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer, T_max=epochs - stage1_epochs, eta_min=lr_min
+                )
+            else:
+                scheduler = torch.optim.lr_scheduler.StepLR(
+                    optimizer, step_size=step_size, gamma=gamma
+                )
+        
+        stage_indicator = ""
+        if two_stage:
+            stage_indicator = f" [Stage {'1: Head Only' if epoch <= stage1_epochs else '2: Full Model'}]"
+        
+        print(f"\nEpoch {epoch}/{epochs}{stage_indicator}")
 
         t0 = time.time()
         train_loss, train_acc = train_one_epoch(
@@ -126,6 +203,8 @@ def train(
             device,
             use_amp=use_amp,
             log_interval=log_interval,
+            use_mixup=use_mixup,
+            mixup_alpha=mixup_alpha,
         )
 
         val_loss, val_acc = evaluate(model, val_loader, criterion, device)

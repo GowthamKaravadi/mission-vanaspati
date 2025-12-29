@@ -22,8 +22,8 @@ def test_single_image(model, image_path, class_names):
         predicted_class = torch.argmax(probabilities).item()
         confidence = probabilities[predicted_class].item()
     
-    print(f"🌱 Prediction: {class_names[predicted_class]}")
-    print(f"🎯 Confidence: {confidence:.2%}")
+    print(f"Prediction: {class_names[predicted_class]}")
+    print(f"Confidence: {confidence:.2%}")
     
     # Display image with prediction
     plt.imshow(image)

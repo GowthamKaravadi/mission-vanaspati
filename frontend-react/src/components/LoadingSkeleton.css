@@ -1,0 +1,87 @@
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f3 25%, #d9e4dd 50%, #f1f5f3 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #2d3748 25%, #4a5568 50%, #2d3748 75%);
+  background-size: 200% 100%;
+}
+
+.skeleton-card {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.1);
+}
+
+.dark .skeleton-card {
+  background: #1a202c;
+}
+
+.skeleton-header {
+  height: 32px;
+  margin-bottom: 16px;
+  width: 60%;
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.skeleton-text.short {
+  width: 70%;
+}
+
+.skeleton-result {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.1);
+}
+
+.dark .skeleton-result {
+  background: #1a202c;
+}
+
+.skeleton-title {
+  height: 36px;
+  margin-bottom: 20px;
+  width: 80%;
+}
+
+.skeleton-bar {
+  height: 30px;
+  margin-bottom: 20px;
+  border-radius: 15px;
+}
+
+.skeleton-table {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+}
+
+.dark .skeleton-table {
+  background: #1a202c;
+}
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.skeleton-cell {
+  height: 40px;
+}

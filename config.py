@@ -24,21 +24,32 @@ class Config:
     
     MODEL_NAME = "resnet50"
     USE_PRETRAINED = True
-    FREEZE_BACKBONE = True
+    FREEZE_BACKBONE = False
     
     HIDDEN_UNITS = 512
     DROPOUT_RATE = 0.5
     
-    NUM_EPOCHS = 10
+    NUM_EPOCHS = 20
     
     BATCH_SIZE = 32
     
-    LEARNING_RATE = 0.001
-    LR_STEP_SIZE = 5
-    LR_GAMMA = 0.1
+    LEARNING_RATE = 0.0001
+    LR_SCHEDULER = "cosine"  # "step" or "cosine"
+    LR_STEP_SIZE = 7  # For StepLR
+    LR_GAMMA = 0.1  # For StepLR
+    LR_MIN = 1e-6  # For CosineAnnealingLR
     
-    OPTIMIZER = "adam"
+    OPTIMIZER = "adamw"
     WEIGHT_DECAY = 1e-4
+    
+    # Two-stage training
+    TWO_STAGE_TRAINING = True
+    STAGE1_EPOCHS = 5  # Train head only
+    STAGE2_EPOCHS = 15  # Fine-tune full model
+    
+    # MixUp augmentation
+    USE_MIXUP = True
+    MIXUP_ALPHA = 0.2  # Controls mixing strength
     
     IMAGE_SIZE = (224, 224)
     NORMALIZE_MEAN = [0.485, 0.456, 0.406]
