@@ -175,6 +175,9 @@
 }
 
 .back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   padding: 0.5rem 1rem;
@@ -208,11 +211,23 @@
 }
 
 .detail-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 1.2rem;
   margin-bottom: 0.75rem;
   color: var(--text-primary);
+}
+
+.section-icon {
+  font-size: 1.1rem;
+  color: var(--primary, #2d6a4f);
+}
+
+.section-icon.organic {
+  color: #52b788;
 }
 
 .detail-section p {

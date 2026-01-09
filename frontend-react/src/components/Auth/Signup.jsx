@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { BiLeaf } from 'react-icons/bi';
 import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
@@ -67,8 +68,9 @@ const Signup = () => {
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200 }}
+            className="app-title"
           >
-            🌿 Mission Vanaspati
+            <BiLeaf className="title-icon" /> Mission Vanaspati
           </motion.h1>
           <h2>Create Account</h2>
           <p>Join us in protecting plant health</p>

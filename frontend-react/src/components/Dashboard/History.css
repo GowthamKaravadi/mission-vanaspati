@@ -1,26 +1,40 @@
 .history-container {
   background: var(--bg-card);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px var(--shadow);
-  max-height: 600px;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 4px 16px var(--shadow);
+  max-height: 650px;
   overflow-y: auto;
   margin-top: 30px;
+  border: 1px solid var(--border);
 }
 
 .history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
   border-bottom: 2px solid var(--border);
 }
 
 .history-header h3 {
-  color: var(--text-primary);
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 1.35rem;
   margin: 0;
+  font-weight: 700;
+}
+
+.history-header .header-icon {
+  color: var(--accent);
+  -webkit-text-fill-color: var(--accent);
+  font-size: 1.3rem;
 }
 
 .btn-clear-history {
@@ -50,15 +64,16 @@
   justify-content: space-between;
   align-items: center;
   background: var(--bg-secondary);
-  padding: 15px;
-  border-radius: 10px;
+  padding: 18px;
+  border-radius: 16px;
   border: 1px solid var(--border);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .history-item:hover {
-  transform: translateX(5px);
-  box-shadow: 0 2px 8px var(--shadow);
+  transform: translateX(6px) translateY(-2px);
+  box-shadow: 0 6px 20px var(--shadow);
+  background: var(--bg-card);
 }
 
 .history-item-content {
@@ -76,12 +91,20 @@
 }
 
 .history-type-badge {
-  background: #2d6a4f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gradient-primary);
   color: white;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 5px 12px;
+  border-radius: 12px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.25);
+}
+
+.history-type-badge svg {
+  font-size: 0.85rem;
 }
 
 .history-timestamp {
@@ -101,12 +124,13 @@
 }
 
 .confidence-badge {
-  background: #52b788;
+  background: linear-gradient(135deg, #52b788 0%, #40916c 100%);
   color: white;
-  padding: 3px 8px;
-  border-radius: 5px;
+  padding: 4px 10px;
+  border-radius: 10px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(82, 183, 136, 0.3);
 }
 
 .history-filename {
@@ -120,13 +144,17 @@
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
-  padding: 5px;
-  opacity: 0.6;
+  padding: 8px;
+  opacity: 0.5;
   transition: all 0.3s ease;
+  color: var(--text-secondary);
+  border-radius: 6px;
 }
 
 .btn-delete-history:hover {
   opacity: 1;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
 }
 
 .history-empty {
@@ -142,6 +170,8 @@
   font-size: 4rem;
   display: block;
   margin-bottom: 15px;
+  color: var(--accent);
+  opacity: 0.4;
 }
 
 .history-empty p {
@@ -167,12 +197,12 @@
 }
 
 .history-container::-webkit-scrollbar-thumb {
-  background: #52b788;
+  background: var(--accent-light);
   border-radius: 10px;
 }
 
 .history-container::-webkit-scrollbar-thumb:hover {
-  background: #2d6a4f;
+  background: var(--accent);
 }
 
 @media (max-width: 768px) {

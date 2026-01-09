@@ -71,4 +71,23 @@ export const adminAPI = {
     api.patch(`/admin/feedback/${feedbackId}?status=${status}`),
 };
 
+export const gardenAPI = {
+  getPlants: () => api.get('/garden/plants'),
+  savePlant: (plantName, diseaseName, confidence, notes = null, status = 'monitoring') =>
+    api.post('/garden/plants', null, {
+      params: { plant_name: plantName, disease_name: diseaseName, confidence, notes, status }
+    }),
+  updatePlant: (plantId, notes = null, status = null) =>
+    api.patch(`/garden/plants/${plantId}`, null, { params: { notes, status } }),
+  deletePlant: (plantId) => api.delete(`/garden/plants/${plantId}`),
+};
+
+export const historyAPI = {
+  getHistory: (limit = 50, offset = 0) => 
+    api.get('/history/diagnosis', { params: { limit, offset } }),
+  saveHistory: (data) => api.post('/history/diagnosis', data),
+  deleteHistory: (diagnosisId) => api.delete(`/history/diagnosis/${diagnosisId}`),
+  clearHistory: () => api.delete('/history/diagnosis'),
+};
+
 export default api;

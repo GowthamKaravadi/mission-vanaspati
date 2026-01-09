@@ -1,10 +1,25 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FiClock, FiImage, FiFolder, FiTrash2 } from 'react-icons/fi';
 import { useHistory } from '../../context/HistoryContext';
+import formatClassName from '../../utils/formatClassName';
 import './History.css';
 
 const History = () => {
-  const { history, clearHistory, deleteHistoryItem } = useHistory();
+  const { history, clearHistory, deleteHistoryItem, loading } = useHistory();
+
+  if (loading) {
+    return (
+      <motion.div 
+        className="history-empty"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="loader"></div>
+        <p>Loading history...</p>
+      </motion.div>
+    );
+  }
 
   if (history.length === 0) {
     return (
@@ -13,7 +28,7 @@ const History = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <span className="empty-icon">📜</span>
+        <FiClock className="empty-icon" />
         <p>No analysis history yet</p>
         <small>Your predictions will appear here</small>
       </motion.div>
@@ -43,7 +58,7 @@ const History = () => {
       exit={{ opacity: 0, x: 20 }}
     >
       <div className="history-header">
-        <h3>📜 Analysis History</h3>
+        <h3><FiClock className="header-icon" /> Analysis History</h3>
         <motion.button 
           onClick={clearHistory} 
           className="btn-clear-history"
@@ -68,36 +83,31 @@ const History = () => {
               <div className="history-item-content">
                 <div className="history-item-header">
                   <span className="history-type-badge">
-                    {item.type === 'single' ? '🖼️ Single' : '📁 Batch'}
+                    {item.diagnosis_type === 'single' ? <><FiImage /> Single</> : <><FiFolder /> Batch</>}
                   </span>
-                  <span className="history-timestamp">{formatDate(item.timestamp)}</span>
+                  <span className="history-timestamp">{formatDate(item.diagnosed_at || item.timestamp)}</span>
                 </div>
 
-                {item.type === 'single' ? (
-                  <div className="history-result">
-                    <strong>{item.result?.predicted_class || item.result?.class || 'Unknown'}</strong>
-                    <span className="confidence-badge">
-                      {((item.result?.confidence || 0) * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                ) : (
-                  <div className="history-result">
-                    <strong>{item.count} images analyzed</strong>
-                  </div>
-                )}
+                <div className="history-result">
+                  <strong>{formatClassName(item.disease_name || item.result?.predicted_class || 'Unknown')}</strong>
+                  <span className="confidence-badge">
+                    {((item.confidence || item.result?.confidence || 0) * 100).toFixed(1)}%
+                  </span>
+                </div>
 
-                {item.filename && (
-                  <small className="history-filename">{item.filename}</small>
+                {item.image_name && (
+                  <small className="history-filename">{item.image_name}</small>
                 )}
               </div>
 
               <motion.button
                 onClick={() => deleteHistoryItem(item.id)}
                 className="btn-delete-history"
-                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
+                title="Delete"
               >
-                🗑️
+                <FiTrash2 />
               </motion.button>
             </motion.div>
           ))}

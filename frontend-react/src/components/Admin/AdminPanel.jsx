@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { FiUsers, FiUserCheck, FiUserPlus, FiCheckCircle, FiPieChart, FiMessageSquare, FiHome, FiLogOut } from 'react-icons/fi';
+import { MdAdminPanelSettings, MdDashboard } from 'react-icons/md';
+import { BiLeaf } from 'react-icons/bi';
 import { useAuth } from '../../context/AuthContext';
 import { adminAPI } from '../../services/api';
 import Analytics from './Analytics';
@@ -126,7 +129,9 @@ const AdminPanel = () => {
       <header className="admin-header">
         <div className="header-content">
           <div className="logo">
-            <span className="logo-icon">🌿</span>
+            <span className="logo-icon">
+              <MdAdminPanelSettings style={{ fontSize: '1.8rem' }} />
+            </span>
             <h1>Admin Panel</h1>
           </div>
           <div className="header-actions">
@@ -136,6 +141,7 @@ const AdminPanel = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
+              <FiHome style={{ marginRight: '8px', fontSize: '1.2rem' }} />
               Dashboard
             </motion.button>
             <motion.button 
@@ -144,6 +150,7 @@ const AdminPanel = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
+              <FiLogOut style={{ marginRight: '8px', fontSize: '1.2rem' }} />
               Logout
             </motion.button>
           </div>
@@ -158,6 +165,7 @@ const AdminPanel = () => {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
         >
+          <MdDashboard className="tab-icon" />
           OVERVIEW
         </motion.button>
         <motion.button
@@ -166,6 +174,7 @@ const AdminPanel = () => {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
         >
+          <FiUsers className="tab-icon" />
           USERS
         </motion.button>
         <motion.button
@@ -174,6 +183,7 @@ const AdminPanel = () => {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
         >
+          <FiPieChart className="tab-icon" />
           ANALYTICS
         </motion.button>
         <motion.button
@@ -182,6 +192,7 @@ const AdminPanel = () => {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
         >
+          <FiMessageSquare className="tab-icon" />
           FEEDBACK
         </motion.button>
       </div>
@@ -202,7 +213,9 @@ const AdminPanel = () => {
                 transition={{ delay: 0.1 }}
                 whileHover={{ scale: 1.05, y: -5 }}
               >
-                <div className="stat-icon">U</div>
+                <div className="stat-icon">
+                  <FiUsers />
+                </div>
                 <div className="stat-info">
                   <div className="stat-value">{stats.total}</div>
                   <div className="stat-label">Total Users</div>
@@ -215,7 +228,9 @@ const AdminPanel = () => {
                 transition={{ delay: 0.2 }}
                 whileHover={{ scale: 1.05, y: -5 }}
               >
-                <div className="stat-icon">A</div>
+                <div className="stat-icon admin-icon">
+                  <MdAdminPanelSettings />
+                </div>
                 <div className="stat-info">
                   <div className="stat-value">{stats.admins}</div>
                   <div className="stat-label">Administrators</div>
@@ -228,7 +243,9 @@ const AdminPanel = () => {
                 transition={{ delay: 0.3 }}
                 whileHover={{ scale: 1.05, y: -5 }}
               >
-                <div className="stat-icon">✓</div>
+                <div className="stat-icon active-icon">
+                  <FiCheckCircle />
+                </div>
                 <div className="stat-info">
                   <div className="stat-value">{stats.active}</div>
                   <div className="stat-label">Active Users</div>
@@ -241,7 +258,9 @@ const AdminPanel = () => {
                 transition={{ delay: 0.4 }}
                 whileHover={{ scale: 1.05, y: -5 }}
               >
-                <div className="stat-icon">+</div>
+                <div className="stat-icon new-icon">
+                  <FiUserPlus />
+                </div>
                 <div className="stat-info">
                   <div className="stat-value">{stats.newThisWeek}</div>
                   <div className="stat-label">New This Week</div>
@@ -264,7 +283,9 @@ const AdminPanel = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span className="action-icon">U</span>
+                  <span className="action-icon">
+                    <FiUsers />
+                  </span>
                   <span className="action-label">Manage Users</span>
                 </motion.button>
                 <motion.button 
@@ -273,7 +294,9 @@ const AdminPanel = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span className="action-icon">A</span>
+                  <span className="action-icon">
+                    <FiPieChart />
+                  </span>
                   <span className="action-label">View Analytics</span>
                 </motion.button>
                 <motion.button 
@@ -282,7 +305,9 @@ const AdminPanel = () => {
                   whileHover={{ scale: 1.02, boxShadow: "0 8px 16px rgba(45, 106, 79, 0.2)" }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span className="action-icon">🌿</span>
+                  <span className="action-icon">
+                    <BiLeaf />
+                  </span>
                   <span className="action-label">Go to Dashboard</span>
                 </motion.button>
                 <motion.button 
@@ -291,7 +316,13 @@ const AdminPanel = () => {
                   whileHover={{ scale: 1.02, boxShadow: "0 8px 16px rgba(45, 106, 79, 0.2)" }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span className="action-icon">🔄</span>
+                  <span className="action-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '100%', height: '100%' }}>
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <polyline points="1 20 1 14 7 14"></polyline>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                  </span>
                   <span className="action-label">Refresh Data</span>
                 </motion.button>
               </div>

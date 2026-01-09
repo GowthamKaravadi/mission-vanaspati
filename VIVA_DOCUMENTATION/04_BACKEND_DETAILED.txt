@@ -1,0 +1,962 @@
+================================================================================
+BACKEND (FASTAPI + PYTHON) - DETAILED EXPLANATION
+================================================================================
+
+WHAT IS BACKEND?
+--------------------------------------------------------------------------------
+Backend is the SERVER that runs on a computer/server. It:
+- Receives requests from frontend
+- Processes data
+- Runs AI model
+- Talks to database
+- Sends responses back
+
+Think of it as the "brain" that does all the heavy work behind the scenes.
+
+
+WHY PYTHON?
+--------------------------------------------------------------------------------
+Python is chosen because:
+1. EASY TO LEARN: English-like syntax, readable code
+2. AI/ML LIBRARIES: PyTorch, NumPy, scikit-learn
+3. WEB FRAMEWORKS: FastAPI is Python-based
+4. DATA PROCESSING: Great for handling images, data
+5. HUGE COMMUNITY: Millions of developers, tons of help online
+
+Example Python vs Other Languages:
+```python
+# Python - Simple and clear
+def greet(name):
+    return f"Hello, {name}!"
+
+// Java - More verbose
+public String greet(String name) {
+    return "Hello, " + name + "!";
+}
+```
+
+
+WHAT IS FASTAPI?
+--------------------------------------------------------------------------------
+FastAPI is a modern Python web framework for building APIs.
+
+API = Application Programming Interface
+Think of it as a restaurant menu:
+- Menu lists dishes you can order (API endpoints)
+- You order dish (send request)
+- Kitchen prepares it (server processes)
+- Waiter brings food (returns response)
+
+WHY FASTAPI?
+1. FAST: High performance (as fast as Node.js)
+2. EASY: Simple to learn and use
+3. AUTO DOCS: Creates API documentation automatically
+4. TYPE HINTS: Catches errors before running
+5. ASYNC: Handles many requests at once
+
+
+YOUR BACKEND STRUCTURE
+--------------------------------------------------------------------------------
+
+src/
+├── fastapi_test.py      ← Main server file (API routes)
+├── database.py          ← Database models and connection
+├── auth.py              ← Authentication logic (JWT)
+│
+├── core/                ← AI/ML components
+│   ├── model.py         ← Neural network definition
+│   ├── predictor.py     ← Makes predictions
+│   ├── dataset.py       ← Loads training data
+│   ├── trainer.py       ← Trains the model
+│   └── transforms.py    ← Image preprocessing
+│
+└── utils/               ← Helper functions
+    ├── data_cleaning.py
+    └── visualization.py
+
+models/                  ← Trained AI models
+├── plant_classifier_final.pth    ← PyTorch model file
+└── class_mapping.json            ← Disease name mappings
+
+config.py                ← Configuration (database URL, etc.)
+
+
+PYTHON BASICS YOU NEED TO KNOW
+--------------------------------------------------------------------------------
+
+1. FUNCTIONS
+   ```python
+   def calculate_sum(a, b):
+       """This function adds two numbers"""
+       result = a + b
+       return result
+   
+   total = calculate_sum(5, 3)  # total = 8
+   ```
+
+2. CLASSES (Objects)
+   ```python
+   class User:
+       def __init__(self, name, email):  # Constructor
+           self.name = name
+           self.email = email
+       
+       def greet(self):
+           return f"Hello, I'm {self.name}"
+   
+   user = User("John", "john@example.com")
+   print(user.greet())  # "Hello, I'm John"
+   ```
+
+3. ASYNC/AWAIT (Asynchronous Programming)
+   ```python
+   # Normal function - blocks (waits)
+   def fetch_data():
+       time.sleep(5)  # Waits 5 seconds
+       return "data"
+   
+   # Async function - non-blocking (does other work while waiting)
+   async def fetch_data_async():
+       await asyncio.sleep(5)  # Does other tasks during wait
+       return "data"
+   ```
+   
+   Your FastAPI uses async for better performance!
+
+4. DECORATORS (Special markers)
+   ```python
+   @app.get("/hello")    # This is a decorator
+   def hello():
+       return "Hello!"
+   ```
+   
+   Decorators add functionality to functions.
+   @app.get("/hello") means: "This function handles GET requests to /hello"
+
+
+FASTAPI_TEST.PY - MAIN SERVER FILE
+--------------------------------------------------------------------------------
+
+This is the HEART of your backend. Let's break it down:
+
+1. IMPORTS (Bringing in tools)
+   ```python
+   from fastapi import FastAPI, HTTPException, Depends
+   from fastapi.middleware.cors import CORSMiddleware
+   import torch
+   from PIL import Image
+   ```
+   
+   - FastAPI: Web framework
+   - torch: PyTorch (AI library)
+   - PIL: Image processing
+   - HTTPException: For error handling
+
+2. APP INITIALIZATION
+   ```python
+   app = FastAPI(
+       title="Mission Vanaspati API",
+       description="Plant Disease Detection API",
+       version="1.0.0"
+   )
+   ```
+   
+   Creates FastAPI application instance.
+
+3. CORS MIDDLEWARE
+   ```python
+   app.add_middleware(
+       CORSMiddleware,
+       allow_origins=["http://localhost:5174"],  # Frontend URL
+       allow_credentials=True,
+       allow_methods=["*"],  # Allow all HTTP methods
+       allow_headers=["*"],  # Allow all headers
+   )
+   ```
+   
+   CORS = Cross-Origin Resource Sharing
+   Allows frontend (port 5174) to talk to backend (port 8000)
+   
+   Without CORS: Browser blocks requests (security)
+   With CORS: Browser allows communication
+
+4. MODEL LOADING
+   ```python
+   predictor = Predictor(
+       model_path="models/plant_classifier_final.pth",
+       class_mapping_path="models/class_mapping.json"
+   )
+   ```
+   
+   Loads the trained AI model when server starts.
+   Happens ONCE, then reused for all predictions.
+
+
+API ENDPOINTS EXPLAINED
+--------------------------------------------------------------------------------
+
+Endpoint = A specific URL that does a specific job
+
+Format: @app.METHOD("URL")
+
+AUTHENTICATION ENDPOINTS
+═══════════════════════════════════════════════════════════════
+
+1. SIGNUP
+   ```python
+   @app.post("/signup", tags=["Authentication"])
+   async def signup(name: str, email: str, password: str):
+       # 1. Check if user already exists
+       if db.query(User).filter(User.email == email).first():
+           raise HTTPException(400, "Email already registered")
+       
+       # 2. Hash password (encrypt for security)
+       hashed_password = hash_password(password)
+       
+       # 3. Create new user in database
+       new_user = User(name=name, email=email, password=hashed_password)
+       db.add(new_user)
+       db.commit()
+       
+       # 4. Return success
+       return {"message": "User created successfully"}
+   ```
+   
+   Flow:
+   Frontend sends: {"name": "John", "email": "john@email.com", "password": "pass123"}
+   Backend:
+   - Checks if email exists
+   - Hashes password (so we never store plain password)
+   - Creates user in database
+   - Returns success message
+
+
+2. LOGIN
+   ```python
+   @app.post("/login", tags=["Authentication"])
+   async def login(email: str, password: str):
+       # 1. Find user by email
+       user = db.query(User).filter(User.email == email).first()
+       if not user:
+           raise HTTPException(401, "Invalid credentials")
+       
+       # 2. Verify password
+       if not verify_password(password, user.password):
+           raise HTTPException(401, "Invalid credentials")
+       
+       # 3. Create JWT token (like a movie ticket)
+       token = create_access_token({"user_id": user.id})
+       
+       # 4. Return token and user info
+       return {
+           "access_token": token,
+           "token_type": "bearer",
+           "user": {"id": user.id, "name": user.name, "email": user.email}
+       }
+   ```
+   
+   JWT Token explained:
+   - Contains user_id encrypted
+   - Frontend stores it
+   - Sends with every request
+   - Backend decrypts to know who you are
+   - Like a concert wristband - proves you paid to enter
+
+
+3. GET CURRENT USER
+   ```python
+   @app.get("/me", tags=["Authentication"])
+   async def get_profile(current_user: User = Depends(get_current_active_user)):
+       return {
+           "id": current_user.id,
+           "name": current_user.name,
+           "email": current_user.email,
+           "is_admin": current_user.is_admin
+       }
+   ```
+   
+   Depends(get_current_active_user) = Dependency Injection
+   - Automatically checks JWT token
+   - Extracts user from database
+   - If invalid token → Error
+   - If valid → Gives you user object
+
+
+PREDICTION ENDPOINTS (THE MAIN FEATURE)
+═══════════════════════════════════════════════════════════════
+
+4. SINGLE IMAGE PREDICTION
+   ```python
+   @app.post("/predict", tags=["Prediction"])
+   async def predict_disease(
+       file: UploadFile = File(...),
+       current_user: User = Depends(get_current_active_user)
+   ):
+       # 1. Validate file type
+       if not file.content_type.startswith("image/"):
+           raise HTTPException(400, "Not an image file")
+       
+       # 2. Read file content
+       contents = await file.read()
+       
+       # 3. Check file size (max 10MB)
+       if len(contents) > 10 * 1024 * 1024:
+           raise HTTPException(400, "File too large")
+       
+       # 4. Open image with PIL
+       image = Image.open(io.BytesIO(contents)).convert('RGB')
+       
+       # 5. Run AI prediction
+       result = predictor.predict(image, return_all=True)
+       
+       # 6. Return results
+       return {
+           "predicted_class": result['class_name'],
+           "confidence": result['confidence'],
+           "top_predictions": result['top_k'],
+           "filename": file.filename
+       }
+   ```
+   
+   Step-by-step:
+   1. User uploads image from frontend
+   2. Backend receives file
+   3. Validates it's an image
+   4. Converts to format AI understands
+   5. AI model predicts disease
+   6. Returns disease name + confidence
+   
+   Example response:
+   ```json
+   {
+     "predicted_class": "Tomato__Late_blight",
+     "confidence": 0.95,
+     "top_predictions": [
+       {"class_name": "Tomato__Late_blight", "confidence": 0.95},
+       {"class_name": "Tomato__Early_blight", "confidence": 0.03},
+       {"class_name": "Tomato_healthy", "confidence": 0.01}
+     ],
+     "filename": "my_tomato.jpg"
+   }
+   ```
+
+
+5. BATCH PREDICTION
+   ```python
+   @app.post("/predict/batch", tags=["Prediction"])
+   async def predict_batch(
+       files: List[UploadFile] = File(...),
+       current_user: User = Depends(get_current_active_user)
+   ):
+       results = []
+       
+       # Process each file
+       for file in files:
+           # Same validation as single
+           image = Image.open(io.BytesIO(await file.read())).convert('RGB')
+           result = predictor.predict(image, return_all=True)
+           
+           results.append({
+               "filename": file.filename,
+               "predicted_class": result['class_name'],
+               "confidence": result['confidence'],
+               "top_predictions": result['top_k']
+           })
+       
+       return {"predictions": results}
+   ```
+   
+   Handles multiple images at once.
+   Loops through each file, predicts, collects results.
+
+
+HISTORY ENDPOINTS (DATABASE OPERATIONS)
+═══════════════════════════════════════════════════════════════
+
+6. SAVE DIAGNOSIS TO HISTORY
+   ```python
+   @app.post("/history/diagnosis", tags=["History"])
+   async def save_diagnosis(
+       diagnosis_type: str,
+       image_name: str,
+       disease_name: str,
+       confidence: float,
+       alternatives: List[Dict],
+       remedy_info: Dict,
+       current_user: User = Depends(get_current_active_user),
+       db: Session = Depends(get_db)
+   ):
+       # Create new history entry
+       new_diagnosis = DiagnosisHistory(
+           user_id=current_user.id,
+           diagnosis_type=diagnosis_type,
+           image_name=image_name,
+           disease_name=disease_name,
+           confidence=confidence,
+           alternatives=alternatives,  # Stored as JSON
+           remedy_info=remedy_info,    # Stored as JSON
+           diagnosed_at=datetime.utcnow(),
+           status="active"
+       )
+       
+       # Save to database
+       db.add(new_diagnosis)
+       db.commit()
+       
+       return {"diagnosis_id": new_diagnosis.id}
+   ```
+   
+   After prediction, frontend calls this to save result.
+
+
+7. GET DIAGNOSIS HISTORY
+   ```python
+   @app.get("/history/diagnosis", tags=["History"])
+   async def get_history(
+       limit: int = 50,
+       offset: int = 0,
+       current_user: User = Depends(get_current_active_user),
+       db: Session = Depends(get_db)
+   ):
+       # Query user's diagnoses (newest first)
+       diagnoses = db.query(DiagnosisHistory)\
+                     .filter(DiagnosisHistory.user_id == current_user.id)\
+                     .order_by(DiagnosisHistory.diagnosed_at.desc())\
+                     .limit(limit)\
+                     .offset(offset)\
+                     .all()
+       
+       # Count total
+       total = db.query(DiagnosisHistory)\
+                 .filter(DiagnosisHistory.user_id == current_user.id)\
+                 .count()
+       
+       return {
+           "history": [serialize(d) for d in diagnoses],
+           "total": total
+       }
+   ```
+   
+   Pagination explained:
+   - limit=50: Return 50 items
+   - offset=0: Start from beginning
+   - offset=50: Start from 51st item (next page)
+   
+   Like pages in a book!
+
+
+8. DELETE SINGLE DIAGNOSIS
+   ```python
+   @app.delete("/history/diagnosis/{diagnosis_id}", tags=["History"])
+   async def delete_diagnosis(
+       diagnosis_id: int,
+       current_user: User = Depends(get_current_active_user),
+       db: Session = Depends(get_db)
+   ):
+       # Find diagnosis
+       diagnosis = db.query(DiagnosisHistory).filter(
+           DiagnosisHistory.id == diagnosis_id,
+           DiagnosisHistory.user_id == current_user.id  # Security: only own
+       ).first()
+       
+       if not diagnosis:
+           raise HTTPException(404, "Not found")
+       
+       # Delete from database
+       db.delete(diagnosis)
+       db.commit()
+       
+       return {"message": "Deleted"}
+   ```
+
+
+9. CLEAR ALL HISTORY
+   ```python
+   @app.delete("/history/diagnosis", tags=["History"])
+   async def clear_history(
+       current_user: User = Depends(get_current_active_user),
+       db: Session = Depends(get_db)
+   ):
+       # Delete all user's diagnoses
+       deleted = db.query(DiagnosisHistory)\
+                   .filter(DiagnosisHistory.user_id == current_user.id)\
+                   .delete()
+       
+       db.commit()
+       
+       return {"deleted_count": deleted}
+   ```
+
+
+GARDEN ENDPOINTS (SAVED PLANTS)
+═══════════════════════════════════════════════════════════════
+
+10. GET SAVED PLANTS
+    ```python
+    @app.get("/garden/plants", tags=["Garden"])
+    async def get_plants(
+        current_user: User = Depends(get_current_active_user),
+        db: Session = Depends(get_db)
+    ):
+        plants = db.query(SavedPlant)\
+                   .filter(SavedPlant.user_id == current_user.id)\
+                   .all()
+        
+        return {"plants": [serialize(p) for p in plants]}
+    ```
+
+
+11. SAVE PLANT
+    ```python
+    @app.post("/garden/plants", tags=["Garden"])
+    async def save_plant(
+        plant_name: str,
+        disease_name: str,
+        confidence: float,
+        notes: str = None,
+        status: str = "monitoring",
+        current_user: User = Depends(get_current_active_user),
+        db: Session = Depends(get_db)
+    ):
+        new_plant = SavedPlant(
+            user_id=current_user.id,
+            plant_name=plant_name,
+            disease_name=disease_name,
+            confidence=confidence,
+            notes=notes,
+            status=status,
+            created_at=datetime.utcnow()
+        )
+        
+        db.add(new_plant)
+        db.commit()
+        
+        return {"plant_id": new_plant.id}
+    ```
+
+
+ADMIN ENDPOINTS
+═══════════════════════════════════════════════════════════════
+
+12. GET ALL USERS (Admin Only)
+    ```python
+    @app.get("/admin/users", tags=["Admin"])
+    async def get_users(
+        current_user: User = Depends(get_current_admin_user),  # Admin check
+        db: Session = Depends(get_db)
+    ):
+        users = db.query(User).all()
+        return {"users": [serialize(u) for u in users]}
+    ```
+
+
+13. TOGGLE ADMIN STATUS
+    ```python
+    @app.put("/admin/users/{user_id}/toggle-admin", tags=["Admin"])
+    async def toggle_admin(
+        user_id: int,
+        current_user: User = Depends(get_current_admin_user),
+        db: Session = Depends(get_db)
+    ):
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(404, "User not found")
+        
+        # Toggle boolean
+        user.is_admin = not user.is_admin
+        db.commit()
+        
+        return {"message": "Updated"}
+    ```
+
+
+DATABASE.PY - DATABASE MODELS
+--------------------------------------------------------------------------------
+
+Uses SQLAlchemy ORM (Object-Relational Mapping)
+
+ORM explained:
+Instead of writing SQL:
+```sql
+SELECT * FROM users WHERE email = 'john@email.com';
+```
+
+You write Python:
+```python
+db.query(User).filter(User.email == 'john@email.com').first()
+```
+
+Much easier! ORM converts Python to SQL automatically.
+
+
+DATABASE MODELS:
+
+1. USER MODEL
+   ```python
+   class User(Base):
+       __tablename__ = "users"
+       
+       id = Column(Integer, primary_key=True, index=True)
+       name = Column(String, nullable=False)
+       email = Column(String, unique=True, index=True, nullable=False)
+       password = Column(String, nullable=False)  # Hashed
+       is_admin = Column(Boolean, default=False)
+       created_at = Column(DateTime, default=datetime.utcnow)
+   ```
+   
+   Represents a row in 'users' table.
+   Each User object = One user account
+
+
+2. DIAGNOSISHISTORY MODEL
+   ```python
+   class DiagnosisHistory(Base):
+       __tablename__ = "diagnosis_history"
+       
+       id = Column(Integer, primary_key=True, index=True)
+       user_id = Column(Integer, ForeignKey("users.id"))  # Links to User
+       diagnosis_type = Column(String)  # 'single' or 'batch'
+       image_name = Column(String)
+       disease_name = Column(String)
+       confidence = Column(Float)
+       alternatives = Column(JSON)  # Stores array as JSON
+       remedy_info = Column(JSON)   # Stores object as JSON
+       diagnosed_at = Column(DateTime, index=True)
+       notes = Column(Text)
+       status = Column(String, default="active")
+   ```
+   
+   ForeignKey = Links to another table
+   JSON = Stores complex data (arrays, objects)
+
+
+3. SAVEDPLANT MODEL
+   ```python
+   class SavedPlant(Base):
+       __tablename__ = "saved_plants"
+       
+       id = Column(Integer, primary_key=True, index=True)
+       user_id = Column(Integer, ForeignKey("users.id"))
+       plant_name = Column(String)
+       disease_name = Column(String)
+       confidence = Column(Float)
+       notes = Column(Text)
+       status = Column(String)  # 'monitoring', 'treated', 'recovered'
+       created_at = Column(DateTime)
+   ```
+
+
+4. REMEDY MODEL
+   ```python
+   class Remedy(Base):
+       __tablename__ = "remedies"
+       
+       id = Column(Integer, primary_key=True, index=True)
+       disease_name = Column(String, unique=True)
+       description = Column(Text)
+       organic_remedies = Column(JSON)
+       chemical_treatments = Column(JSON)
+       prevention_tips = Column(JSON)
+       products = Column(JSON)
+   ```
+
+
+AUTH.PY - AUTHENTICATION LOGIC
+--------------------------------------------------------------------------------
+
+1. PASSWORD HASHING
+   ```python
+   from passlib.context import CryptContext
+   
+   pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+   
+   def hash_password(password: str) -> str:
+       return pwd_context.hash(password)
+   
+   def verify_password(plain: str, hashed: str) -> bool:
+       return pwd_context.verify(plain, hashed)
+   ```
+   
+   Why hash passwords?
+   - NEVER store plain passwords in database
+   - If database hacked, passwords still safe
+   - Hashing is one-way (can't reverse)
+   
+   Example:
+   Password: "mypass123"
+   Hashed: "$2b$12$KpVq.x4z5YHxX.5yZQJX5eLkAzQx8Tz5P..."
+   
+   Even if someone sees the hash, they can't get original password!
+
+
+2. JWT TOKEN CREATION
+   ```python
+   from jose import jwt
+   from datetime import datetime, timedelta
+   
+   SECRET_KEY = "your-secret-key"  # Keep this secret!
+   ALGORITHM = "HS256"
+   
+   def create_access_token(data: dict):
+       to_encode = data.copy()
+       expire = datetime.utcnow() + timedelta(days=7)  # Token valid 7 days
+       to_encode.update({"exp": expire})
+       
+       # Encode to JWT
+       encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+       return encoded_jwt
+   ```
+   
+   JWT Structure:
+   ```
+   header.payload.signature
+   
+   header: {"alg": "HS256", "typ": "JWT"}
+   payload: {"user_id": 123, "exp": 1735123456}
+   signature: Encrypted hash of header + payload
+   ```
+
+
+3. TOKEN VERIFICATION
+   ```python
+   def get_current_user(token: str = Depends(oauth2_scheme)):
+       try:
+           # Decode JWT
+           payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+           user_id = payload.get("user_id")
+           
+           # Get user from database
+           user = db.query(User).filter(User.id == user_id).first()
+           if not user:
+               raise HTTPException(401, "Invalid token")
+           
+           return user
+       except JWTError:
+           raise HTTPException(401, "Invalid token")
+   ```
+
+
+AI MODEL INTEGRATION (PREDICTOR)
+--------------------------------------------------------------------------------
+
+File: src/core/predictor.py
+
+```python
+class Predictor:
+    def __init__(self, model_path, class_mapping_path):
+        # Load PyTorch model
+        self.model = torch.load(model_path)
+        self.model.eval()  # Set to evaluation mode
+        
+        # Load disease name mappings
+        with open(class_mapping_path) as f:
+            self.class_mapping = json.load(f)
+        
+        # Define image transformations
+        self.transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406],
+                                [0.229, 0.224, 0.225])
+        ])
+    
+    def predict(self, image, return_all=False):
+        # Preprocess image
+        img_tensor = self.transform(image).unsqueeze(0)
+        
+        # Run through model
+        with torch.no_grad():
+            outputs = self.model(img_tensor)
+            probabilities = torch.nn.functional.softmax(outputs, dim=1)
+        
+        # Get top prediction
+        confidence, predicted_idx = torch.max(probabilities, 1)
+        class_name = self.class_mapping[str(predicted_idx.item())]
+        
+        if return_all:
+            # Get top 3 predictions
+            top_k = torch.topk(probabilities, 3)
+            top_predictions = [
+                {
+                    "class_name": self.class_mapping[str(idx.item())],
+                    "confidence": prob.item()
+                }
+                for prob, idx in zip(top_k.values[0], top_k.indices[0])
+            ]
+            
+            return {
+                "class_name": class_name,
+                "confidence": confidence.item(),
+                "top_k": top_predictions
+            }
+        
+        return {
+            "class_name": class_name,
+            "confidence": confidence.item()
+        }
+```
+
+Breakdown:
+1. Loads trained PyTorch model file (.pth)
+2. Preprocesses image (resize, normalize)
+3. Converts to tensor (format AI understands)
+4. Runs through neural network
+5. Applies softmax (converts to probabilities)
+6. Returns disease name + confidence
+
+
+ERROR HANDLING
+--------------------------------------------------------------------------------
+
+FastAPI uses HTTPException for errors:
+
+```python
+# 400 Bad Request - User's fault
+raise HTTPException(400, "Invalid input")
+
+# 401 Unauthorized - Need to login
+raise HTTPException(401, "Authentication required")
+
+# 403 Forbidden - Not allowed (not admin)
+raise HTTPException(403, "Admin access required")
+
+# 404 Not Found - Resource doesn't exist
+raise HTTPException(404, "User not found")
+
+# 500 Internal Server Error - Server's fault
+raise HTTPException(500, "Something went wrong")
+```
+
+Try-catch blocks:
+```python
+try:
+    # Risky operation
+    result = predictor.predict(image)
+except Exception as e:
+    # If error, catch it
+    raise HTTPException(500, f"Prediction failed: {str(e)}")
+```
+
+
+SERVER STARTUP
+--------------------------------------------------------------------------------
+
+Running the server:
+```bash
+uvicorn src.fastapi_test:app --reload --port 8000
+```
+
+- uvicorn: ASGI server (runs FastAPI apps)
+- src.fastapi_test:app: Path to app object
+- --reload: Auto-restart on code changes
+- --port 8000: Run on port 8000
+
+When server starts:
+1. Imports all modules
+2. Initializes FastAPI app
+3. Loads AI model (heavy, takes time)
+4. Connects to database
+5. Starts listening on port 8000
+6. Ready to receive requests!
+
+
+AUTOMATIC API DOCUMENTATION
+--------------------------------------------------------------------------------
+
+FastAPI creates docs automatically!
+
+Visit: http://localhost:8000/docs
+
+Shows:
+- All endpoints
+- Required parameters
+- Example requests/responses
+- "Try it out" feature (test APIs in browser)
+
+This is HUGE for viva demonstration! Shows professionalism.
+
+
+DEPENDENCIES (PYTHON PACKAGES)
+--------------------------------------------------------------------------------
+
+requirements.txt lists all packages:
+
+Web Framework:
+- fastapi: API framework
+- uvicorn: ASGI server
+- python-multipart: File upload support
+
+Database:
+- sqlalchemy: ORM
+- psycopg2-binary: PostgreSQL driver
+
+Authentication:
+- python-jose: JWT tokens
+- passlib: Password hashing
+- bcrypt: Hashing algorithm
+
+AI/ML:
+- torch: PyTorch (deep learning)
+- torchvision: Image models
+- pillow: Image processing
+- numpy: Numerical operations
+
+Utilities:
+- python-dotenv: Environment variables
+- pydantic: Data validation
+
+
+ENVIRONMENT VARIABLES
+--------------------------------------------------------------------------------
+
+config.py or .env file:
+
+```python
+DATABASE_URL = "postgresql://user:pass@localhost:5432/vanaspati"
+SECRET_KEY = "your-secret-key-change-in-production"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_DAYS = 7
+```
+
+Environment variables = Configuration that changes per environment
+- Development: localhost database
+- Production: cloud database
+
+Keeps secrets out of code!
+
+
+VIVA TIPS FOR BACKEND
+--------------------------------------------------------------------------------
+
+1. START WITH PURPOSE:
+   "Backend is a Python FastAPI server that handles all business logic,
+   including user authentication, AI predictions, and database operations"
+
+2. EXPLAIN API CONCEPT:
+   "APIs are like restaurant menus - frontend orders what it needs, backend
+   prepares and serves the response. We use REST APIs with HTTP methods"
+
+3. HIGHLIGHT SECURITY:
+   - JWT authentication (stateless, secure)
+   - Password hashing (never store plain passwords)
+   - User ownership checks (users only see their own data)
+
+4. EXPLAIN DATABASE INTEGRATION:
+   "We use SQLAlchemy ORM which converts Python code to SQL automatically.
+   Makes database operations easier and safer"
+
+5. AI INTEGRATION:
+   "Backend loads PyTorch model once at startup. When prediction requested,
+   preprocesses image, runs through neural network, returns disease name
+   and confidence score"
+
+6. SHOW ENDPOINT EXAMPLE:
+   Draw flow: Frontend POST /predict → Backend receives image → Validates →
+   Runs AI → Saves to history → Returns result
+
+7. MENTION ASYNC:
+   "FastAPI uses async/await for better performance - can handle multiple
+   requests simultaneously without blocking"
+
+Remember: Focus on WHAT each part DOES and WHY, not memorizing exact code!

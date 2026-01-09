@@ -1,25 +1,45 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import toast from 'react-hot-toast';
+import { BiLeaf } from 'react-icons/bi';
+import { FiDownload, FiSave } from 'react-icons/fi';
+import api, { gardenAPI } from '../../services/api';
+import { generateDiagnosisReport, generateBatchReport } from '../../utils/pdfGenerator';
+import formatClassName from '../../utils/formatClassName';
 import './Dashboard.css';
 
 const Results = ({ results, mode }) => {
   const [remedies, setRemedies] = useState({});
+  const [savingToGarden, setSavingToGarden] = useState(false);
 
   useEffect(() => {
-    axios.get('http://localhost:8000/remedies')
+    api.get('/remedies')
       .then(res => {
         const remediesMap = {};
         res.data.forEach(item => {
           remediesMap[item.class_name] = {
             description: item.description,
-            remedies: item.remedies
+            remedies: item.remedies,
+            products: item.products || []
           };
         });
         setRemedies(remediesMap);
       })
-      .catch(err => console.error('Failed to load remedies:', err));
+      .catch(() => {});
   }, []);
+
+  const saveToGarden = async (className, confidence) => {
+    setSavingToGarden(true);
+    try {
+      const plantName = className.split('___')[0]; // Extract plant name
+      await gardenAPI.savePlant(plantName, className, confidence, null, 'monitoring');
+      toast.success('Plant saved to your garden!');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to save plant');
+    } finally {
+      setSavingToGarden(false);
+    }
+  };
 
   const getConfidenceClass = (confidence) => {
     if (confidence >= 0.8) return 'high';
@@ -28,13 +48,21 @@ const Results = ({ results, mode }) => {
   };
 
   const getRemedyInfo = (className) => {
-    console.log('Looking for remedy:', className);
-    console.log('Available remedies:', Object.keys(remedies));
     const remedy = remedies[className];
-    if (!remedy) {
-      console.warn('Remedy not found for:', className);
+    return remedy || { description: 'No information available', remedies: [], products: [] };
+  };
+
+  const handleDownloadPDF = () => {
+    if (mode === 'single') {
+      const result = Array.isArray(results) ? results[0] : results;
+      const className = result.predicted_class || result.class;
+      const remedyInfo = getRemedyInfo(className);
+      generateDiagnosisReport(result, remedyInfo);
+      toast.success('PDF downloaded successfully!');
+    } else {
+      generateBatchReport(results, remedies);
+      toast.success('Batch report downloaded!');
     }
-    return remedy || { description: 'No information available', remedies: [] };
   };
 
   if (!results || (Array.isArray(results) && results.length === 0)) {
@@ -43,7 +71,6 @@ const Results = ({ results, mode }) => {
 
   if (mode === 'single') {
     const result = Array.isArray(results) ? results[0] : results;
-    console.log('Full result object:', result);
     const className = result.predicted_class || result.class;
     const confidence = result.confidence;
     const alternatives = result.top_predictions || result.alternatives || [];
@@ -55,7 +82,7 @@ const Results = ({ results, mode }) => {
           <h2>Analysis Results</h2>
           
           <div className="prediction-main">
-            <h3 className="prediction-name">{className}</h3>
+            <h3 className="prediction-name">{formatClassName(className)}</h3>
             <div className="confidence-container">
               <span className="confidence-label">Confidence:</span>
               <div className="confidence-bar">
@@ -82,7 +109,7 @@ const Results = ({ results, mode }) => {
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: idx * 0.1 }}
                 >
-                  <span>{alt.class || alt.predicted_class}</span>
+                  <span>{formatClassName(alt.class || alt.predicted_class)}</span>
                   <span className="alt-confidence">{(alt.confidence * 100).toFixed(1)}%</span>
                 </motion.div>
               ))}
@@ -103,6 +130,62 @@ const Results = ({ results, mode }) => {
                 </ul>
               </>
             )}
+
+            {remedyInfo.products && remedyInfo.products.length > 0 && (
+              <div className="products-section">
+                <h4>🛒 Recommended Products:</h4>
+                <div className="products-grid">
+                  {remedyInfo.products.map((product, idx) => (
+                    <motion.a
+                      key={idx}
+                      href={product.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="product-card"
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                    >
+                      <span className="product-icon">🛍️</span>
+                      <div className="product-info">
+                        <strong>{product.name}</strong>
+                        <small>{product.type}</small>
+                      </div>
+                      <span className="product-arrow">→</span>
+                    </motion.a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="action-buttons-row">
+              <motion.button
+                className="btn btn-primary save-to-garden-btn"
+                onClick={() => saveToGarden(className, confidence)}
+                disabled={savingToGarden}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                {savingToGarden ? <><FiSave className="btn-icon spin" /> Saving...</> : <><BiLeaf className="btn-icon" /> Save to My Garden</>}
+              </motion.button>
+              
+              <motion.button
+                className="btn btn-secondary download-pdf-btn"
+                onClick={handleDownloadPDF}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <FiDownload className="btn-icon" /> Download PDF Report
+              </motion.button>
+            </div>
           </div>
         </div>
       </div>
@@ -119,6 +202,14 @@ const Results = ({ results, mode }) => {
             <span className="stat-value">{results.length}</span>
             <span className="stat-label">Images Analyzed</span>
           </div>
+          <motion.button
+            className="btn btn-secondary download-pdf-btn"
+            onClick={handleDownloadPDF}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            📄 Download Batch Report
+          </motion.button>
         </div>
       </div>
 
@@ -138,7 +229,7 @@ const Results = ({ results, mode }) => {
               whileHover={{ scale: 1.02 }}
             >
               <div className="batch-result-header">
-                <h4>{className}</h4>
+                <h4>{formatClassName(className)}</h4>
                 <motion.span 
                   className={`badge ${getConfidenceClass(result.confidence)}`}
                   initial={{ scale: 0 }}
@@ -176,7 +267,7 @@ const Results = ({ results, mode }) => {
                   <small>Alternatives:</small>
                   {alternatives.slice(0, 2).map((alt, i) => (
                     <div key={i} className="batch-alt">
-                      <span>{alt.class || alt.predicted_class}</span>
+                      <span>{formatClassName(alt.class || alt.predicted_class)}</span>
                       <span>{(alt.confidence * 100).toFixed(0)}%</span>
                     </div>
                   ))}

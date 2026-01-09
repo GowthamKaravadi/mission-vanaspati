@@ -1,0 +1,808 @@
+================================================================================
+                    COMPLETE API ENDPOINTS REFERENCE
+                    Mission Vanaspati - All Backend Routes Explained
+================================================================================
+
+This document explains EVERY API endpoint in your FastAPI backend.
+Each endpoint includes: URL, method, parameters, what it does, and returns.
+
+
+================================================================================
+SECTION 1: AUTHENTICATION ENDPOINTS (/auth)
+================================================================================
+
+--------------------------------------------------------------------------------
+ENDPOINT: POST /auth/signup
+--------------------------------------------------------------------------------
+PURPOSE: Register a new user account
+
+PARAMETERS (Query String):
+  username: string (required)
+    → User's display name
+    → Must be unique
+  
+  email: string (required)
+    → User's email address
+    → Must be unique, valid email format
+  
+  password: string (required)
+    → User's password
+    → Must meet: 8+ chars, 1 uppercase, 1 digit
+
+WHAT IT DOES:
+  1. Check if email already exists → 400 error if yes
+  2. Check if username already exists → 400 error if yes (NEW!)
+  3. Validate password requirements → 400 error if fails
+  4. Hash the password using bcrypt
+  5. Create new User record in database
+  6. Return success message with username
+
+RETURNS (Success - 200):
+  {
+    "message": "User created successfully",
+    "username": "john",
+    "email": "user@example.com",
+    "user_id": 1
+  }
+
+RETURNS (Error - 400):
+  {"detail": "Email already registered"}
+  {"detail": "Username already taken"}
+  {"detail": "Password must be at least 8 characters long"}
+
+EXAMPLE USAGE:
+  POST /auth/signup?username=john&email=john@example.com&password=SecurePass123
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: POST /auth/login
+--------------------------------------------------------------------------------
+PURPOSE: Authenticate user and get access token
+
+PARAMETERS (Form Data):
+  username: string (required)
+    → Can be username OR email
+  
+  password: string (required)
+    → User's password
+
+WHAT IT DOES:
+  1. Search for user by username OR email
+  2. Verify password against stored hash
+  3. Check if user is active
+  4. Generate JWT access token
+  5. Return token and user info
+
+RETURNS (Success - 200):
+  {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "bearer",
+    "username": "john",
+    "email": "john@example.com",
+    "is_admin": false
+  }
+
+RETURNS (Error - 401):
+  {"detail": "Incorrect username/email or password"}
+
+RETURNS (Error - 400):
+  {"detail": "Inactive user"}
+
+HOW TOKEN IS USED:
+  All subsequent requests include:
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /auth/me
+--------------------------------------------------------------------------------
+PURPOSE: Get current user information
+
+REQUIRES: Authentication (Bearer token)
+
+WHAT IT DOES:
+  1. Extract token from Authorization header
+  2. Decode and verify JWT
+  3. Look up user by email in token
+  4. Return user details
+
+RETURNS (Success - 200):
+  {
+    "username": "john",
+    "email": "john@example.com",
+    "is_admin": false,
+    "is_active": true,
+    "created_at": "2024-01-15T10:30:00"
+  }
+
+RETURNS (Error - 401):
+  {"detail": "Could not validate credentials"}
+
+
+
+================================================================================
+SECTION 2: PREDICTION ENDPOINTS (/predict)
+================================================================================
+
+--------------------------------------------------------------------------------
+ENDPOINT: POST /predict
+--------------------------------------------------------------------------------
+PURPOSE: Analyze single plant image for disease
+
+REQUIRES: Authentication
+
+PARAMETERS (Form Data):
+  file: image file (required)
+    → Supported: JPEG, PNG
+    → Max size: 10MB
+    → Must be plant leaf image
+
+WHAT IT DOES:
+  1. Validate file type is image
+  2. Check file size (max 10MB)
+  3. Check image dimensions (min 50x50)
+  4. Validate it's actually a plant image
+  5. Preprocess image for model
+  6. Run through neural network
+  7. Get top predictions with confidence
+  8. Return structured result
+
+RETURNS (Success - 200):
+  {
+    "predicted_class": "Tomato___Late_blight",
+    "confidence": 0.9423,
+    "top_predictions": [
+      {"class_name": "Tomato___Late_blight", "confidence": 0.9423},
+      {"class_name": "Tomato___Early_blight", "confidence": 0.0312},
+      {"class_name": "Tomato___healthy", "confidence": 0.0156}
+    ],
+    "filename": "my_plant.jpg"
+  }
+
+RETURNS (Error - 400):
+  {"detail": "Invalid file type: application/pdf. Please upload an image."}
+  {"detail": "File size exceeds 10MB limit."}
+  {"detail": "Image is too small. Please upload at least 50x50 pixels."}
+  {"detail": "The uploaded image does not appear to be a plant leaf."}
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: POST /predict/batch
+--------------------------------------------------------------------------------
+PURPOSE: Analyze multiple plant images at once
+
+REQUIRES: Authentication
+
+PARAMETERS (Form Data):
+  files: array of image files (required)
+    → Multiple files with same 'files' key
+    → Same validation as single predict
+
+WHAT IT DOES:
+  1. Validate each file
+  2. Skip invalid files (with error messages)
+  3. Process valid images in batch (more efficient)
+  4. Return all results with filenames
+
+RETURNS (Success - 200):
+  {
+    "predictions": [
+      {
+        "filename": "tomato1.jpg",
+        "predicted_class": "Tomato___Late_blight",
+        "confidence": 0.9423,
+        "top_predictions": [...]
+      },
+      {
+        "filename": "tomato2.jpg",
+        "predicted_class": "Tomato___healthy",
+        "confidence": 0.8721,
+        "top_predictions": [...]
+      }
+    ],
+    "warning": "The following images do not appear to be plant leaves: cat.jpg"
+  }
+
+
+
+================================================================================
+SECTION 3: REMEDIES ENDPOINTS (/remedies)
+================================================================================
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /remedies
+--------------------------------------------------------------------------------
+PURPOSE: Get all disease remedies
+
+REQUIRES: None (public endpoint)
+
+WHAT IT DOES:
+  1. Query all remedies from database
+  2. Format each with class_name, description, remedies, products
+
+RETURNS (Success - 200):
+  [
+    {
+      "class_name": "Tomato___Late_blight",
+      "description": "Late blight is caused by the fungus-like oomycete...",
+      "remedies": [
+        "Remove and destroy infected plants",
+        "Apply copper-based fungicide",
+        "Improve air circulation"
+      ],
+      "products": [
+        {"name": "Copper Fungicide", "link": "https://..."}
+      ]
+    },
+    ...
+  ]
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /remedies/{class_name}
+--------------------------------------------------------------------------------
+PURPOSE: Get remedy for specific disease
+
+PARAMETERS (Path):
+  class_name: string
+    → Exact disease name from model
+    → Example: "Tomato___Late_blight"
+
+RETURNS (Success - 200):
+  {
+    "class_name": "Tomato___Late_blight",
+    "description": "...",
+    "remedies": [...],
+    "products": [...]
+  }
+
+RETURNS (Error - 404):
+  {"detail": "Remedy not found"}
+
+
+
+================================================================================
+SECTION 4: ADMIN ENDPOINTS (/admin)
+================================================================================
+
+All admin endpoints REQUIRE:
+  - Authentication (Bearer token)
+  - User must have is_admin = true
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /admin/users
+--------------------------------------------------------------------------------
+PURPOSE: List all users in system
+
+RETURNS (Success - 200):
+  [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "is_active": true,
+      "is_admin": true,
+      "created_at": "2024-01-01T00:00:00"
+    },
+    {
+      "id": 2,
+      "username": "john",
+      "email": "john@example.com",
+      "is_active": true,
+      "is_admin": false,
+      "created_at": "2024-01-15T10:30:00"
+    }
+  ]
+
+RETURNS (Error - 403):
+  {"detail": "Not enough permissions"}
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: PUT /admin/users/{user_id}/toggle-admin
+--------------------------------------------------------------------------------
+PURPOSE: Toggle admin status for user
+
+PARAMETERS (Path):
+  user_id: integer
+    → ID of user to modify
+
+WHAT IT DOES:
+  1. Check user isn't toggling themselves
+  2. Find user by ID
+  3. Flip is_admin value (true→false or false→true)
+  4. Save to database
+
+RETURNS (Success - 200):
+  {
+    "message": "Admin status updated",
+    "user_id": 2,
+    "is_admin": true
+  }
+
+RETURNS (Error - 400):
+  {"detail": "Cannot modify your own admin status"}
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: DELETE /admin/users/{user_id}
+--------------------------------------------------------------------------------
+PURPOSE: Delete a user account
+
+PARAMETERS (Path):
+  user_id: integer
+
+WHAT IT DOES:
+  1. Check admin isn't deleting themselves
+  2. Find user by ID
+  3. Delete from database (cascades to related data)
+
+RETURNS (Success - 200):
+  {"message": "User john@example.com deleted successfully"}
+
+RETURNS (Error - 400):
+  {"detail": "Cannot delete yourself"}
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /admin/feedback
+--------------------------------------------------------------------------------
+PURPOSE: View all user feedback
+
+PARAMETERS (Query - optional):
+  status: string
+    → Filter by: "pending", "reviewed", "resolved"
+
+RETURNS (Success - 200):
+  {
+    "feedback": [
+      {
+        "id": 1,
+        "email": "user@example.com",
+        "subject": "Bug in batch upload",
+        "message": "When I upload multiple images...",
+        "type": "bug",
+        "status": "pending",
+        "created_at": "2024-01-20T14:00:00"
+      }
+    ],
+    "total": 1
+  }
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: PATCH /admin/feedback/{feedback_id}
+--------------------------------------------------------------------------------
+PURPOSE: Update feedback status
+
+PARAMETERS:
+  feedback_id: integer (path)
+  status: string (query)
+    → "pending", "reviewed", or "resolved"
+
+RETURNS (Success - 200):
+  {"message": "Feedback status updated to reviewed"}
+
+
+
+================================================================================
+SECTION 5: FEEDBACK ENDPOINTS (/feedback)
+================================================================================
+
+--------------------------------------------------------------------------------
+ENDPOINT: POST /feedback
+--------------------------------------------------------------------------------
+PURPOSE: Submit user feedback or bug report
+
+REQUIRES: Authentication
+
+PARAMETERS (Query):
+  subject: string (required)
+    → Brief title
+  
+  message: string (required)
+    → Detailed description
+  
+  type: string (optional, default="bug")
+    → "bug", "feature", or "general"
+
+WHAT IT DOES:
+  1. Create feedback record with user's email
+  2. Set status to "pending"
+  3. Save to database
+
+RETURNS (Success - 200):
+  {
+    "status": "success",
+    "message": "Feedback submitted successfully"
+  }
+
+
+
+================================================================================
+SECTION 6: GARDEN ENDPOINTS (/garden)
+================================================================================
+
+All garden endpoints REQUIRE authentication.
+Users can only access their OWN plants.
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /garden/plants
+--------------------------------------------------------------------------------
+PURPOSE: Get user's saved plants
+
+RETURNS (Success - 200):
+  {
+    "plants": [
+      {
+        "id": 1,
+        "plant_name": "Tomato",
+        "disease_name": "Tomato___Late_blight",
+        "confidence": 0.9423,
+        "notes": "Found on leaves in north garden",
+        "status": "treating",
+        "diagnosed_at": "2024-01-15T10:00:00",
+        "updated_at": "2024-01-16T09:00:00"
+      }
+    ],
+    "total": 1
+  }
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: POST /garden/plants
+--------------------------------------------------------------------------------
+PURPOSE: Save plant to garden
+
+PARAMETERS (Query):
+  plant_name: string (required)
+    → Name like "Tomato", "Potato"
+  
+  disease_name: string (required)
+    → Full class name from model
+  
+  confidence: float (required)
+    → Confidence score 0.0 to 1.0
+  
+  notes: string (optional)
+    → User's notes
+  
+  status: string (optional, default="monitoring")
+    → "monitoring", "treating", "recovered"
+
+RETURNS (Success - 200):
+  {
+    "status": "success",
+    "message": "Plant saved to garden",
+    "plant_id": 1
+  }
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: PATCH /garden/plants/{plant_id}
+--------------------------------------------------------------------------------
+PURPOSE: Update plant notes or status
+
+PARAMETERS:
+  plant_id: integer (path)
+  notes: string (query, optional)
+  status: string (query, optional)
+
+RETURNS (Success - 200):
+  {
+    "status": "success",
+    "message": "Plant updated"
+  }
+
+RETURNS (Error - 404):
+  {"detail": "Plant not found"}
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: DELETE /garden/plants/{plant_id}
+--------------------------------------------------------------------------------
+PURPOSE: Remove plant from garden
+
+RETURNS (Success - 200):
+  {
+    "status": "success",
+    "message": "Plant removed from garden"
+  }
+
+
+
+================================================================================
+SECTION 7: HISTORY ENDPOINTS (/history)
+================================================================================
+
+All history endpoints REQUIRE authentication.
+Users can only access their OWN history.
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /history/diagnosis
+--------------------------------------------------------------------------------
+PURPOSE: Get user's diagnosis history
+
+PARAMETERS (Query):
+  limit: integer (optional, default=50)
+    → Max records to return
+  
+  offset: integer (optional, default=0)
+    → Skip this many records (pagination)
+
+RETURNS (Success - 200):
+  {
+    "history": [
+      {
+        "id": 1,
+        "diagnosis_type": "single",
+        "image_name": "tomato.jpg",
+        "disease_name": "Tomato___Late_blight",
+        "confidence": 0.9423,
+        "alternatives": [
+          {"class_name": "Tomato___Early_blight", "confidence": 0.0312}
+        ],
+        "remedy_info": {...},
+        "diagnosed_at": "2024-01-15T10:00:00",
+        "notes": null,
+        "status": "active"
+      }
+    ],
+    "total": 1
+  }
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: POST /history/diagnosis
+--------------------------------------------------------------------------------
+PURPOSE: Save new diagnosis to history
+
+PARAMETERS (Request Body - JSON):
+  {
+    "diagnosis_type": "single",  // or "batch"
+    "image_name": "tomato.jpg",
+    "disease_name": "Tomato___Late_blight",
+    "confidence": 0.9423,
+    "alternatives": [...],
+    "remedy_info": {...},
+    "notes": null
+  }
+
+RETURNS (Success - 200):
+  {
+    "status": "success",
+    "message": "Diagnosis saved to history",
+    "diagnosis_id": 1
+  }
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: DELETE /history/diagnosis/{diagnosis_id}
+--------------------------------------------------------------------------------
+PURPOSE: Delete specific history entry
+
+RETURNS (Success - 200):
+  {
+    "status": "success",
+    "message": "Diagnosis removed from history"
+  }
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: DELETE /history/diagnosis
+--------------------------------------------------------------------------------
+PURPOSE: Clear ALL user's history
+
+RETURNS (Success - 200):
+  {
+    "status": "success",
+    "message": "All history cleared"
+  }
+
+
+
+================================================================================
+SECTION 8: INFO ENDPOINTS (/, /health, /classes)
+================================================================================
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /
+--------------------------------------------------------------------------------
+PURPOSE: Welcome message / health check
+
+REQUIRES: None (public)
+
+RETURNS:
+  {
+    "message": "Welcome to Mission Vanaspati API",
+    "status": "online",
+    "version": "1.0.0",
+    "docs": "/docs"
+  }
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /health
+--------------------------------------------------------------------------------
+PURPOSE: Detailed health check
+
+RETURNS:
+  {
+    "status": "healthy",
+    "model_loaded": true,
+    "num_classes": 44,
+    "device": "cuda"
+  }
+
+
+--------------------------------------------------------------------------------
+ENDPOINT: GET /classes
+--------------------------------------------------------------------------------
+PURPOSE: List all detectable diseases
+
+RETURNS:
+  {
+    "classes": [
+      "Apple___Apple_scab",
+      "Apple___Black_rot",
+      "Apple___Cedar_apple_rust",
+      "Apple___healthy",
+      ...
+    ],
+    "count": 44
+  }
+
+
+
+================================================================================
+SECTION 9: API DOCUMENTATION (AUTOMATIC)
+================================================================================
+
+FastAPI automatically generates interactive documentation:
+
+GET /docs
+  → Swagger UI - interactive API testing
+  → Try out endpoints directly in browser
+
+GET /redoc
+  → ReDoc - alternative documentation format
+  → Clean, readable API documentation
+
+
+
+================================================================================
+SECTION 10: ERROR RESPONSE REFERENCE
+================================================================================
+
+STANDARD HTTP STATUS CODES:
+
+200 OK
+  → Request successful
+  → Data returned in response body
+
+400 Bad Request
+  → Invalid input data
+  → Examples: Invalid password, email already exists
+
+401 Unauthorized
+  → No authentication provided
+  → Token missing or expired
+  → Wrong credentials
+
+403 Forbidden
+  → Authenticated but not allowed
+  → Example: Regular user accessing admin endpoint
+
+404 Not Found
+  → Resource doesn't exist
+  → Example: User ID not in database
+
+500 Internal Server Error
+  → Server-side error
+  → Check server logs for details
+
+
+STANDARD ERROR FORMAT:
+  {
+    "detail": "Error message describing what went wrong"
+  }
+
+
+
+================================================================================
+SECTION 11: AUTHENTICATION FLOW DIAGRAM
+================================================================================
+
+USER SIGNUP:
+  Client                          Server
+    |                               |
+    | POST /auth/signup             |
+    | (username, email, password)   |
+    |------------------------------>|
+    |                               | Validate password
+    |                               | Check email unique
+    |                               | Hash password
+    |                               | Create user in DB
+    |      {message, user_id}       |
+    |<------------------------------|
+
+
+USER LOGIN:
+  Client                          Server
+    |                               |
+    | POST /auth/login              |
+    | (username/email, password)    |
+    |------------------------------>|
+    |                               | Find user
+    |                               | Verify password
+    |                               | Generate JWT token
+    |   {access_token, user_info}   |
+    |<------------------------------|
+    |                               |
+    | Store token in localStorage   |
+
+
+AUTHENTICATED REQUEST:
+  Client                          Server
+    |                               |
+    | GET /predict                  |
+    | Authorization: Bearer TOKEN   |
+    |------------------------------>|
+    |                               | Extract token
+    |                               | Verify signature
+    |                               | Decode payload
+    |                               | Look up user
+    |                               | Process request
+    |      {prediction result}      |
+    |<------------------------------|
+
+
+
+================================================================================
+QUICK REFERENCE: ALL ENDPOINTS SUMMARY
+================================================================================
+
+AUTHENTICATION:
+  POST   /auth/signup              Create account
+  POST   /auth/login               Get access token
+  GET    /auth/me                  Get current user
+
+PREDICTION:
+  POST   /predict                  Single image analysis
+  POST   /predict/batch            Multiple images analysis
+
+REMEDIES:
+  GET    /remedies                 All remedies
+  GET    /remedies/{class_name}    Specific remedy
+
+ADMIN:
+  GET    /admin/users              List all users
+  PUT    /admin/users/{id}/toggle-admin  Toggle admin
+  DELETE /admin/users/{id}         Delete user
+  GET    /admin/feedback           List feedback
+  PATCH  /admin/feedback/{id}      Update feedback status
+
+FEEDBACK:
+  POST   /feedback                 Submit feedback
+
+GARDEN:
+  GET    /garden/plants            List my plants
+  POST   /garden/plants            Save plant
+  PATCH  /garden/plants/{id}       Update plant
+  DELETE /garden/plants/{id}       Remove plant
+
+HISTORY:
+  GET    /history/diagnosis        Get history
+  POST   /history/diagnosis        Save diagnosis
+  DELETE /history/diagnosis/{id}   Delete one
+  DELETE /history/diagnosis        Clear all
+
+INFO:
+  GET    /                         Welcome message
+  GET    /health                   Health check
+  GET    /classes                  All disease classes
+
+
+================================================================================
+END OF API REFERENCE
+================================================================================

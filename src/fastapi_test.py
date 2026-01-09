@@ -1,17 +1,18 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Body
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from PIL import Image
 import io
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 from datetime import timedelta
+from pydantic import BaseModel
 
 from config import active_config as cfg
 from src.core.predictor import PlantDiseasePredictor
-from src.database import get_db, User, Remedy, Feedback, init_db
+from src.database import get_db, User, Remedy, Feedback, SavedPlant, DiagnosisHistory, init_db
 from src.auth import (
     create_access_token,
     get_current_active_user,
@@ -52,17 +53,30 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     init_db()
+    print("=" * 70)
+    print("Mission Vanaspati API Started")
+    print(f"Model: {cfg.MODEL_SAVE_PATH.name}")
+    print(f"Classes: {predictor.num_classes}")
+    print(f"Device: {predictor.device}")
+    print("=" * 70)
 
 
 @app.post("/auth/signup", tags=["Authentication"])
-def signup(email: str, password: str, db: Session = Depends(get_db)) -> Dict:
-    existing_user = db.query(User).filter(User.email == email).first()
-    if existing_user:
+def signup(username: str, email: str, password: str, db: Session = Depends(get_db)) -> Dict:
+    # Check if email already exists
+    existing_email = db.query(User).filter(User.email == email).first()
+    if existing_email:
         raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check if username already exists
+    existing_username = db.query(User).filter(User.username == username).first()
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
     
     validate_password(password)
     
     new_user = User(
+        username=username,
         email=email,
         hashed_password=User.hash_password(password),
         is_active=True,
@@ -75,6 +89,7 @@ def signup(email: str, password: str, db: Session = Depends(get_db)) -> Dict:
     
     return {
         "message": "User created successfully",
+        "username": new_user.username,
         "email": new_user.email,
         "user_id": new_user.id
     }
@@ -186,7 +201,8 @@ def get_all_remedies(db: Session = Depends(get_db)) -> List[Dict]:
         {
             "class_name": r.class_name,
             "description": r.description,
-            "remedies": r.remedies
+            "remedies": r.remedies,
+            "products": r.products
         }
         for r in remedies
     ]
@@ -201,7 +217,8 @@ def get_remedy(class_name: str, db: Session = Depends(get_db)) -> Dict:
     return {
         "class_name": remedy.class_name,
         "description": remedy.description,
-        "remedies": remedy.remedies
+        "remedies": remedy.remedies,
+        "products": remedy.products
     }
 
 
@@ -483,14 +500,264 @@ def update_feedback_status(
     }
 
 
-@app.on_event("startup")
-async def startup_event():
-    print("=" * 70)
-    print("Mission Vanaspati API Started")
-    print(f"Model: {cfg.MODEL_SAVE_PATH.name}")
-    print(f"Classes: {predictor.num_classes}")
-    print(f"Device: {predictor.device}")
-    print("=" * 70)
+# ===================== PLANT GARDEN ENDPOINTS =====================
+
+@app.post("/garden/plants", tags=["Garden"])
+def save_plant_to_garden(
+    plant_name: str,
+    disease_name: str,
+    confidence: float,
+    notes: str = None,
+    status: str = "monitoring",
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Dict:
+    """Save a diagnosed plant to user's garden"""
+    try:
+        saved_plant = SavedPlant(
+            user_id=current_user.id,
+            plant_name=plant_name,
+            disease_name=disease_name,
+            confidence=confidence,
+            notes=notes,
+            status=status
+        )
+        db.add(saved_plant)
+        db.commit()
+        db.refresh(saved_plant)
+        
+        return {
+            "status": "success",
+            "message": "Plant saved to garden",
+            "plant_id": saved_plant.id
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save plant: {str(e)}")
+
+
+# ==================== Diagnosis History Endpoints ====================
+
+class DiagnosisHistoryRequest(BaseModel):
+    diagnosis_type: str
+    image_name: str
+    disease_name: str
+    confidence: float
+    alternatives: Optional[List[Dict]] = None
+    remedy_info: Optional[Dict] = None
+    notes: Optional[str] = None
+
+
+@app.post("/history/diagnosis", tags=["History"])
+def save_diagnosis_to_history(
+    data: DiagnosisHistoryRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Dict:
+    """Save a diagnosis to user's history"""
+    try:
+        diagnosis = DiagnosisHistory(
+            user_id=current_user.id,
+            diagnosis_type=data.diagnosis_type,
+            image_name=data.image_name,
+            disease_name=data.disease_name,
+            confidence=data.confidence,
+            alternatives=data.alternatives,
+            remedy_info=data.remedy_info,
+            notes=data.notes
+        )
+        db.add(diagnosis)
+        db.commit()
+        db.refresh(diagnosis)
+        
+        return {
+            "status": "success",
+            "message": "Diagnosis saved to history",
+            "diagnosis_id": diagnosis.id
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save diagnosis: {str(e)}")
+
+
+@app.get("/history/diagnosis", tags=["History"])
+def get_diagnosis_history(
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Dict:
+    """Get user's diagnosis history"""
+    try:
+        total = db.query(DiagnosisHistory).filter(
+            DiagnosisHistory.user_id == current_user.id,
+            DiagnosisHistory.status == 'active'
+        ).count()
+        
+        history = db.query(DiagnosisHistory).filter(
+            DiagnosisHistory.user_id == current_user.id,
+            DiagnosisHistory.status == 'active'
+        ).order_by(
+            DiagnosisHistory.diagnosed_at.desc()
+        ).limit(limit).offset(offset).all()
+        
+        return {
+            "total": total,
+            "history": [
+                {
+                    "id": item.id,
+                    "diagnosis_type": item.diagnosis_type,
+                    "image_name": item.image_name,
+                    "disease_name": item.disease_name,
+                    "confidence": item.confidence,
+                    "alternatives": item.alternatives,
+                    "remedy_info": item.remedy_info,
+                    "diagnosed_at": item.diagnosed_at.isoformat(),
+                    "notes": item.notes
+                }
+                for item in history
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
+
+
+@app.delete("/history/diagnosis/{diagnosis_id}", tags=["History"])
+def delete_diagnosis(
+    diagnosis_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Dict:
+    """Delete a diagnosis from history"""
+    diagnosis = db.query(DiagnosisHistory).filter(
+        DiagnosisHistory.id == diagnosis_id,
+        DiagnosisHistory.user_id == current_user.id
+    ).first()
+    
+    if not diagnosis:
+        raise HTTPException(status_code=404, detail="Diagnosis not found")
+    
+    try:
+        db.delete(diagnosis)
+        db.commit()
+        return {"status": "success", "message": "Diagnosis deleted"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete diagnosis: {str(e)}")
+
+
+@app.delete("/history/diagnosis", tags=["History"])
+def clear_diagnosis_history(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Dict:
+    """Clear all diagnosis history for the user"""
+    try:
+        deleted_count = db.query(DiagnosisHistory).filter(
+            DiagnosisHistory.user_id == current_user.id
+        ).delete()
+        db.commit()
+        return {
+            "status": "success",
+            "message": f"Cleared {deleted_count} items from history"
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to clear history: {str(e)}")
+
+
+@app.get("/garden/plants", tags=["Garden"])
+def get_user_garden(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Dict:
+    """Get all plants in user's garden"""
+    plants = db.query(SavedPlant).filter(SavedPlant.user_id == current_user.id).order_by(SavedPlant.diagnosed_at.desc()).all()
+    
+    return {
+        "status": "success",
+        "count": len(plants),
+        "plants": [
+            {
+                "id": p.id,
+                "plant_name": p.plant_name,
+                "disease_name": p.disease_name,
+                "confidence": p.confidence,
+                "notes": p.notes,
+                "status": p.status,
+                "diagnosed_at": p.diagnosed_at.isoformat(),
+                "updated_at": p.updated_at.isoformat()
+            }
+            for p in plants
+        ]
+    }
+
+
+@app.patch("/garden/plants/{plant_id}", tags=["Garden"])
+def update_plant_in_garden(
+    plant_id: int,
+    notes: str = None,
+    status: str = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Dict:
+    """Update plant notes or status"""
+    plant = db.query(SavedPlant).filter(
+        SavedPlant.id == plant_id,
+        SavedPlant.user_id == current_user.id
+    ).first()
+    
+    if not plant:
+        raise HTTPException(status_code=404, detail="Plant not found")
+    
+    if notes is not None:
+        plant.notes = notes
+    if status is not None:
+        if status not in ["monitoring", "treating", "recovered"]:
+            raise HTTPException(status_code=400, detail="Invalid status")
+        plant.status = status
+    
+    db.commit()
+    db.refresh(plant)
+    
+    return {
+        "status": "success",
+        "message": "Plant updated",
+        "plant": {
+            "id": plant.id,
+            "plant_name": plant.plant_name,
+            "disease_name": plant.disease_name,
+            "confidence": plant.confidence,
+            "notes": plant.notes,
+            "status": plant.status,
+            "diagnosed_at": plant.diagnosed_at.isoformat(),
+            "updated_at": plant.updated_at.isoformat()
+        }
+    }
+
+
+@app.delete("/garden/plants/{plant_id}", tags=["Garden"])
+def delete_plant_from_garden(
+    plant_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> Dict:
+    """Remove a plant from user's garden"""
+    plant = db.query(SavedPlant).filter(
+        SavedPlant.id == plant_id,
+        SavedPlant.user_id == current_user.id
+    ).first()
+    
+    if not plant:
+        raise HTTPException(status_code=404, detail="Plant not found")
+    
+    db.delete(plant)
+    db.commit()
+    
+    return {
+        "status": "success",
+        "message": "Plant removed from garden"
+    }
 
 
 @app.on_event("shutdown")

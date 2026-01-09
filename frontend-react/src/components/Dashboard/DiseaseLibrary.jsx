@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BiLeaf } from 'react-icons/bi';
+import { FiArrowLeft, FiCheck, FiAlertTriangle, FiShield } from 'react-icons/fi';
+import { MdLocalHospital, MdBugReport } from 'react-icons/md';
 import './DiseaseLibrary.css';
 
 const DiseaseLibrary = ({ onClose }) => {
@@ -103,30 +106,30 @@ const DiseaseLibrary = ({ onClose }) => {
                 className="back-btn" 
                 onClick={() => setSelectedDisease(null)}
               >
-                ← Back to List
+                <FiArrowLeft /> Back to List
               </button>
               
               <h3>{selectedDisease.displayName}</h3>
               
               <div className="detail-section">
-                <h4>🌿 PLANT</h4>
+                <h4><BiLeaf className="section-icon" /> PLANT</h4>
                 <p>{selectedDisease.plant}</p>
               </div>
 
               <div className="detail-section">
-                <h4>🦠 CONDITION</h4>
+                <h4><MdBugReport className="section-icon" /> CONDITION</h4>
                 <p>{selectedDisease.condition}</p>
               </div>
 
               <div className="detail-section">
-                <h4>💊 CHEMICAL TREATMENT</h4>
+                <h4><MdLocalHospital className="section-icon" /> CHEMICAL TREATMENT</h4>
                 <p><strong>Fungicide:</strong> {selectedDisease.fungicide}</p>
                 <p><strong>Pesticide:</strong> {selectedDisease.pesticide}</p>
               </div>
 
               {selectedDisease.organic.length > 0 && (
                 <div className="detail-section">
-                  <h4>🌱 ORGANIC TREATMENT</h4>
+                  <h4><BiLeaf className="section-icon organic" /> ORGANIC TREATMENT</h4>
                   <ul>
                     {selectedDisease.organic.map((item, idx) => (
                       <li key={idx}>{item}</li>
@@ -137,7 +140,7 @@ const DiseaseLibrary = ({ onClose }) => {
 
               {selectedDisease.prevention.length > 0 && (
                 <div className="detail-section">
-                  <h4>🛡️ PREVENTION</h4>
+                  <h4><FiShield className="section-icon" /> PREVENTION</h4>
                   <ul>
                     {selectedDisease.prevention.map((item, idx) => (
                       <li key={idx}>{item}</li>
@@ -167,7 +170,7 @@ const DiseaseLibrary = ({ onClose }) => {
                         >
                           <div className="disease-name">{disease.condition}</div>
                           <div className={`health-indicator ${disease.condition.toLowerCase().includes('healthy') ? 'healthy' : 'diseased'}`}>
-                            {disease.condition.toLowerCase().includes('healthy') ? '✓' : '⚠'}
+                            {disease.condition.toLowerCase().includes('healthy') ? <FiCheck /> : <FiAlertTriangle />}
                           </div>
                         </motion.div>
                       ))}

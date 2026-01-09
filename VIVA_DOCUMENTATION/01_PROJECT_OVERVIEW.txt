@@ -1,0 +1,138 @@
+================================================================================
+MISSION VANASPATI - PROJECT OVERVIEW
+================================================================================
+
+WHAT IS THIS PROJECT?
+--------------------------------------------------------------------------------
+Mission Vanaspati is a web application that helps farmers and gardeners identify
+plant diseases from photos. Users upload images of plant leaves, and the system
+uses AI (Artificial Intelligence) to detect what disease the plant has.
+
+Think of it like a doctor for plants - you show a picture, and it diagnoses the
+problem!
+
+
+PROJECT TYPE
+--------------------------------------------------------------------------------
+This is a FULL-STACK WEB APPLICATION, which means:
+- FULL-STACK: It has both a visible website (frontend) AND a server (backend)
+- WEB APPLICATION: Users access it through a web browser (Chrome, Firefox, etc.)
+
+
+MAIN FEATURES
+--------------------------------------------------------------------------------
+1. USER AUTHENTICATION
+   - Users can create accounts (Sign Up)
+   - Users can login with email and password
+   - Their data is private and secure
+
+2. DISEASE DETECTION
+   - Upload single plant image → Get instant diagnosis
+   - Upload multiple images at once (Batch Mode) → Analyze many plants
+   - Shows disease name and confidence percentage (how sure the AI is)
+
+3. DIAGNOSIS HISTORY
+   - All past diagnoses are saved in a database
+   - Users can view their previous results anytime
+   - Works across devices (login from phone, see history from computer)
+
+4. REMEDY INFORMATION
+   - After detecting disease, shows treatment suggestions
+   - Lists organic remedies, chemical treatments, and prevention tips
+   - Includes product recommendations
+
+5. MY GARDEN
+   - Users can save plants they're monitoring
+   - Track plant health status over time
+   - Add personal notes about each plant
+
+6. ADMIN PANEL
+   - Special users (admins) can manage the system
+   - View all users, feedback, and analytics
+   - Manage user permissions
+
+7. DISEASE LIBRARY
+   - Reference guide of all supported plant diseases
+   - Educational content about each disease
+
+
+WHO USES THIS?
+--------------------------------------------------------------------------------
+PRIMARY USERS:
+- Farmers who need to identify crop diseases quickly
+- Home gardeners caring for their plants
+- Agricultural students learning about plant diseases
+
+ADMIN USERS:
+- System administrators who manage the platform
+- Agricultural experts who can review and improve the system
+
+
+TECHNOLOGY SIMPLE EXPLANATION
+--------------------------------------------------------------------------------
+Think of your application like a restaurant:
+
+FRONTEND (React) = The dining area where customers sit
+- What customers see and interact with
+- Beautiful design, menus, buttons
+
+BACKEND (FastAPI/Python) = The kitchen where food is prepared
+- Does all the heavy work behind the scenes
+- Processes requests, makes decisions
+
+DATABASE (PostgreSQL) = The storage room with ingredients
+- Stores all data (users, history, saved plants)
+- Keeps information safe and organized
+
+AI MODEL (PyTorch) = The chef's special recipe
+- The "brain" that recognizes plant diseases
+- Trained on thousands of plant images
+
+
+WHY THIS PROJECT IS IMPRESSIVE FOR VIVA
+--------------------------------------------------------------------------------
+1. REAL-WORLD PROBLEM: Solves actual farmer challenges
+2. MODERN TECHNOLOGY: Uses latest web development tools
+3. AI INTEGRATION: Implements machine learning in practical way
+4. DATABASE DESIGN: Proper data storage and relationships
+5. SECURITY: User authentication and data protection
+6. SCALABILITY: Can handle multiple users simultaneously
+7. USER EXPERIENCE: Clean, modern, responsive design
+
+
+PROJECT STATISTICS
+--------------------------------------------------------------------------------
+- Frontend Files: ~30 React components
+- Backend Endpoints: ~40 API routes
+- Database Tables: 5 main tables (users, remedies, diagnosis_history, saved_plants, feedback)
+- AI Model: Trained on 44 plant disease classes
+- Lines of Code: ~5,000+ lines
+- Technologies Used: 10+ major frameworks/libraries
+
+
+WHAT YOU BUILT (SIMPLIFIED)
+--------------------------------------------------------------------------------
+You built a professional-grade web application that:
+1. Accepts user registrations and secure logins
+2. Processes image uploads
+3. Uses AI to identify plant diseases
+4. Stores all data in a reliable database
+5. Provides helpful treatment recommendations
+6. Tracks user activity and history
+7. Has admin controls for management
+
+This is equivalent to a COMMERCIAL SOFTWARE PRODUCT that companies would sell!
+
+
+NEXT STEPS
+--------------------------------------------------------------------------------
+Read the other documentation files in order:
+1. 02_ARCHITECTURE_EXPLAINED.txt - How everything connects
+2. 03_FRONTEND_DETAILED.txt - Website/User Interface details
+3. 04_BACKEND_DETAILED.txt - Server/Logic details
+4. 05_DATABASE_EXPLAINED.txt - Data storage details
+5. 06_AI_MODEL_EXPLAINED.txt - How disease detection works
+6. 07_DATA_FLOW.txt - Step-by-step user journey
+7. 08_VIVA_QA.txt - Common viva questions and answers
+
+Take your time with each file. Understand one concept before moving to the next.

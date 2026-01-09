@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { FiTrendingUp, FiTrendingDown, FiCalendar, FiBarChart2, FiUsers, FiZap } from 'react-icons/fi';
 import './Admin.css';
 
 const Analytics = ({ users }) => {
@@ -216,10 +217,10 @@ const Analytics = ({ users }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
       >
-        <h3>📈 Key Insights</h3>
+        <h3><FiTrendingUp className="section-title-icon" /> Key Insights</h3>
         <div className="insights-grid">
           <div className="insight-card">
-            <span className="insight-icon">📅</span>
+            <span className="insight-icon"><FiCalendar /></span>
             <div className="insight-content">
               <strong>Most Active Day</strong>
               <p>{analyticsData.dailySignups.reduce((max, day) => 
@@ -228,7 +229,7 @@ const Analytics = ({ users }) => {
             </div>
           </div>
           <div className="insight-card">
-            <span className="insight-icon">📊</span>
+            <span className="insight-icon"><FiBarChart2 /></span>
             <div className="insight-content">
               <strong>Avg Daily Signups</strong>
               <p>
@@ -238,7 +239,7 @@ const Analytics = ({ users }) => {
             </div>
           </div>
           <div className="insight-card">
-            <span className="insight-icon">👥</span>
+            <span className="insight-icon"><FiUsers /></span>
             <div className="insight-content">
               <strong>User Activity Rate</strong>
               <p>
@@ -249,13 +250,13 @@ const Analytics = ({ users }) => {
             </div>
           </div>
           <div className="insight-card">
-            <span className="insight-icon">⚡</span>
+            <span className="insight-icon"><FiZap /></span>
             <div className="insight-content">
               <strong>Growth Trend</strong>
-              <p>
+              <p className="growth-indicator">
                 {analyticsData.dailySignups[6].signups >= analyticsData.dailySignups[0].signups 
-                  ? '📈 Increasing' 
-                  : '📉 Decreasing'}
+                  ? <><FiTrendingUp className="trend-up" /> Increasing</> 
+                  : <><FiTrendingDown className="trend-down" /> Decreasing</>}
               </p>
             </div>
           </div>

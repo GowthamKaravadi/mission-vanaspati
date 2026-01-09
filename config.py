@@ -7,6 +7,7 @@ class Config:
     PROJECT_ROOT = Path(__file__).parent
     
     DATA_DIR = PROJECT_ROOT / "data"
+    MERGED_DATA_DIR = DATA_DIR / "MergedDataset"  # Unified dataset folder
     PLANTVILLAGE_DIR = DATA_DIR / "PlantVillage"
     NEWPLANTDISEASES_DIR = DATA_DIR / "NewPlantDiseases"
     TRAIN_DIR = NEWPLANTDISEASES_DIR / "train"
@@ -111,6 +112,13 @@ class Config:
     def get_data_directories(cls):
         data_dirs = []
         
+        # Prioritize merged dataset if available
+        if cls.MERGED_DATA_DIR.exists():
+            print(f"Using merged dataset: {cls.MERGED_DATA_DIR}")
+            data_dirs.append(cls.MERGED_DATA_DIR)
+            return data_dirs
+        
+        # Fallback to original separate datasets
         if cls.PLANTVILLAGE_DIR.exists():
             data_dirs.append(cls.PLANTVILLAGE_DIR)
         

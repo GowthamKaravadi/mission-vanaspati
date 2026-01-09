@@ -1,28 +1,36 @@
 # Azure Deployment Script for Mission Vanaspati
 # Prerequisites: Azure CLI installed and logged in (az login)
+# 
+# SIMPLIFIED VERSION: Model bundled with code (no blob storage needed)
+# This saves ~10 minutes deployment time and $0.50/month
 
 param(
-    [Parameter(Mandatory=$true)]
     [string]$ResourceGroupName = "mission-vanaspati-rg",
-    
-    [Parameter(Mandatory=$true)]
     [string]$Location = "eastus",
-    
     [Parameter(Mandatory=$true)]
-    [string]$AppName = "mission-vanaspati"
+    [string]$AppName
 )
 
 Write-Host "=== Mission Vanaspati Azure Deployment ===" -ForegroundColor Green
+Write-Host "App Name: $AppName" -ForegroundColor Cyan
+Write-Host "Location: $Location" -ForegroundColor Cyan
+
+# Verify model files exist
+if (-not (Test-Path "models/plant_classifier_final.pth")) {
+    Write-Host "ERROR: Model file not found at models/plant_classifier_final.pth" -ForegroundColor Red
+    exit 1
+}
+Write-Host "Model file verified (will be bundled with code)" -ForegroundColor Green
 
 # 1. Create Resource Group
-Write-Host "`n[1/6] Creating Resource Group..." -ForegroundColor Yellow
+Write-Host "`n[1/4] Creating Resource Group..." -ForegroundColor Yellow
 az group create --name $ResourceGroupName --location $Location
 
 # 2. Create PostgreSQL Flexible Server
-Write-Host "`n[2/6] Creating PostgreSQL Database..." -ForegroundColor Yellow
+Write-Host "`n[2/4] Creating PostgreSQL Database (takes 3-5 minutes)..." -ForegroundColor Yellow
 $dbServerName = "$AppName-db"
 $dbAdminUser = "vanaspatiAdmin"
-$dbAdminPassword = Read-Host "Enter PostgreSQL admin password" -AsSecureString
+$dbAdminPassword = Read-Host "Enter PostgreSQL admin password (min 8 chars, include uppercase, lowercase, number)" -AsSecureString
 $dbAdminPasswordPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($dbAdminPassword))
 
 az postgres flexible-server create `
@@ -34,8 +42,9 @@ az postgres flexible-server create `
     --sku-name Standard_B1ms `
     --tier Burstable `
     --storage-size 32 `
-    --version 14 `
-    --public-access 0.0.0.0
+    --version 15 `
+    --public-access 0.0.0.0 `
+    --yes
 
 # Create database
 Write-Host "Creating database..." -ForegroundColor Yellow
@@ -44,52 +53,8 @@ az postgres flexible-server db create `
     --server-name $dbServerName `
     --database-name vanaspatidb
 
-# 3. Create Storage Account for Model File
-Write-Host "`n[3/6] Creating Storage Account for Model..." -ForegroundColor Yellow
-$storageAccountName = ($AppName -replace '-','') + "storage"
-az storage account create `
-    --name $storageAccountName `
-    --resource-group $ResourceGroupName `
-    --location $Location `
-    --sku Standard_LRS
-
-# Get storage connection string
-$storageConnectionString = az storage account show-connection-string `
-    --name $storageAccountName `
-    --resource-group $ResourceGroupName `
-    --query connectionString `
-    --output tsv
-
-# Create blob container
-az storage container create `
-    --name models `
-    --connection-string $storageConnectionString `
-    --public-access blob
-
-# Upload model file
-Write-Host "Uploading model file..." -ForegroundColor Yellow
-az storage blob upload `
-    --container-name models `
-    --name plant_classifier_final.pth `
-    --file "models/plant_classifier_final.pth" `
-    --connection-string $storageConnectionString
-
-# Upload class mapping
-az storage blob upload `
-    --container-name models `
-    --name class_mapping.json `
-    --file "models/class_mapping.json" `
-    --connection-string $storageConnectionString
-
-# Get blob URLs
-$modelUrl = "https://$storageAccountName.blob.core.windows.net/models/plant_classifier_final.pth"
-$classMappingUrl = "https://$storageAccountName.blob.core.windows.net/models/class_mapping.json"
-
-Write-Host "Model URL: $modelUrl" -ForegroundColor Cyan
-Write-Host "Class Mapping URL: $classMappingUrl" -ForegroundColor Cyan
-
-# 4. Create App Service Plan
-Write-Host "`n[4/6] Creating App Service Plan..." -ForegroundColor Yellow
+# 3. Create App Service Plan
+Write-Host "`n[3/4] Creating App Service Plan..." -ForegroundColor Yellow
 $appServicePlan = "$AppName-plan"
 az appservice plan create `
     --name $appServicePlan `
@@ -98,22 +63,22 @@ az appservice plan create `
     --sku B1 `
     --is-linux
 
-# 5. Create Web App
-Write-Host "`n[5/6] Creating Web App..." -ForegroundColor Yellow
+# 4. Create Web App & Deploy Code
+Write-Host "`n[4/4] Creating Web App and Deploying Code..." -ForegroundColor Yellow
 az webapp create `
     --resource-group $ResourceGroupName `
     --plan $appServicePlan `
     --name $AppName `
-    --runtime "PYTHON:3.12"
+    --runtime "PYTHON:3.11"
 
 # Configure startup command
 az webapp config set `
     --resource-group $ResourceGroupName `
     --name $AppName `
-    --startup-file "gunicorn -w 4 -k uvicorn.workers.UvicornWorker src.fastapi_test:app"
+    --startup-file "gunicorn -w 2 -k uvicorn.workers.UvicornWorker src.app:app --bind 0.0.0.0:8000"
 
-# 6. Configure Environment Variables
-Write-Host "`n[6/6] Configuring Environment Variables..." -ForegroundColor Yellow
+# Configure Environment Variables
+Write-Host "Configuring environment variables..." -ForegroundColor Yellow
 
 # Generate secret key
 $secretKey = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 50 | ForEach-Object {[char]$_})
@@ -121,38 +86,36 @@ $secretKey = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 50 | For
 # Database URL
 $databaseUrl = "postgresql://${dbAdminUser}:${dbAdminPasswordPlain}@${dbServerName}.postgres.database.azure.com/vanaspatidb?sslmode=require"
 
-# Frontend URL (will be set after Static Web App is created)
-$frontendUrl = "https://$AppName.azurewebsites.net"
-
 az webapp config appsettings set `
     --resource-group $ResourceGroupName `
     --name $AppName `
     --settings `
-        DATABASE_URL=$databaseUrl `
-        SECRET_KEY=$secretKey `
-        ENVIRONMENT=production `
-        API_HOST=0.0.0.0 `
-        API_PORT=8000 `
-        FRONTEND_URL=$frontendUrl `
-        MODEL_PATH=$modelUrl `
-        CLASS_MAPPING_PATH=$classMappingUrl `
-        ALLOWED_ORIGINS=$frontendUrl
+        DATABASE_URL="$databaseUrl" `
+        SECRET_KEY="$secretKey" `
+        ENVIRONMENT="production" `
+        MODEL_PATH="/home/site/wwwroot/models/plant_classifier_final.pth" `
+        CLASS_MAPPING_PATH="/home/site/wwwroot/models/class_mapping.json" `
+        ALLOWED_ORIGINS="*" `
+        PYTHONPATH="/home/site/wwwroot"
 
-# Deploy code
-Write-Host "`nDeploying application code..." -ForegroundColor Yellow
+# Deploy code (model bundled with code)
+Write-Host "`nDeploying application code (includes model files)..." -ForegroundColor Yellow
+Write-Host "This may take 5-10 minutes due to model file size..." -ForegroundColor Cyan
+
 az webapp up `
     --resource-group $ResourceGroupName `
     --name $AppName `
-    --runtime "PYTHON:3.12" `
-    --sku B1 `
-    --location $Location
+    --runtime "PYTHON:3.11" `
+    --sku B1
 
 Write-Host "`n=== Deployment Complete! ===" -ForegroundColor Green
 Write-Host "`nBackend URL: https://$AppName.azurewebsites.net" -ForegroundColor Cyan
 Write-Host "Database Server: $dbServerName.postgres.database.azure.com" -ForegroundColor Cyan
-Write-Host "Model URL: $modelUrl" -ForegroundColor Cyan
 Write-Host "`nNext Steps:" -ForegroundColor Yellow
-Write-Host "1. Update frontend API URL in frontend-react/src/services/api.js"
-Write-Host "2. Deploy frontend using GitHub Actions (already configured)"
-Write-Host "3. Update FRONTEND_URL in App Service settings after frontend deployment"
-Write-Host "4. Initialize database by visiting: https://$AppName.azurewebsites.net/init-db"
+Write-Host "1. Initialize database: https://$AppName.azurewebsites.net/init-db"
+Write-Host "2. Deploy frontend to Vercel (free) with VITE_API_URL=https://$AppName.azurewebsites.net"
+Write-Host "3. Update ALLOWED_ORIGINS with your frontend URL:"
+Write-Host "   az webapp config appsettings set --resource-group $ResourceGroupName --name $AppName --settings ALLOWED_ORIGINS='https://your-frontend.vercel.app'"
+Write-Host "`nCost Saving Tip: Stop services when not using!" -ForegroundColor Magenta
+Write-Host "   az webapp stop --resource-group $ResourceGroupName --name $AppName"
+Write-Host "   az postgres flexible-server stop --resource-group $ResourceGroupName --name $dbServerName"

@@ -1,0 +1,698 @@
+================================================================================
+DATABASE (POSTGRESQL) - DETAILED EXPLANATION
+================================================================================
+
+WHAT IS A DATABASE?
+--------------------------------------------------------------------------------
+A database is like a digital filing cabinet that stores data in organized tables.
+
+Real-world analogy:
+- PAPER FILING SYSTEM: Folders in cabinet, papers in folders
+- DATABASE SYSTEM: Tables in database, rows in tables
+
+Why use database instead of files?
+1. ORGANIZED: Data in structured tables
+2. FAST: Find data quickly with indexes
+3. RELATIONSHIPS: Connect related data
+4. CONCURRENT: Many users at once
+5. SAFE: Transactions, backups, recovery
+
+
+WHY POSTGRESQL?
+--------------------------------------------------------------------------------
+PostgreSQL is a powerful, free, open-source database system.
+
+Alternatives:
+- MySQL: Similar, very popular
+- SQLite: Simple, file-based (not for production)
+- MongoDB: NoSQL (different structure)
+
+Why PostgreSQL for your project:
+1. RELIABLE: Used by Apple, Netflix, Instagram
+2. ADVANCED FEATURES: JSON support, full-text search
+3. SCALABLE: Handles millions of records
+4. FREE: Open-source, no licensing costs
+5. STANDARD: Widely used in industry
+
+
+DATABASE CONCEPTS (SIMPLIFIED)
+--------------------------------------------------------------------------------
+
+1. TABLE
+   A table is like an Excel spreadsheet with rows and columns.
+   
+   Example: users table
+   ┌────┬──────────┬─────────────────┬──────────────┬──────────┐
+   │ id │   name   │      email      │   password   │ is_admin │
+   ├────┼──────────┼─────────────────┼──────────────┼──────────┤
+   │  1 │ John Doe │ john@email.com  │ $2b$12$KpV  │  false   │
+   │  2 │ Jane     │ jane@email.com  │ $2b$12$XyZ  │  true    │
+   │  3 │ Bob      │ bob@email.com   │ $2b$12$AbC  │  false   │
+   └────┴──────────┴─────────────────┴──────────────┴──────────┘
+   
+   - Each ROW = One user
+   - Each COLUMN = One piece of information
+
+
+2. PRIMARY KEY
+   Unique identifier for each row.
+   
+   In users table: id = Primary Key
+   - Always unique (no two users have same id)
+   - Auto-increments (1, 2, 3, 4...)
+   - Used to identify specific row
+
+
+3. FOREIGN KEY
+   Links one table to another.
+   
+   Example:
+   diagnosis_history table has user_id (foreign key)
+   → Points to id in users table
+   → Shows which user owns each diagnosis
+   
+   It's like a reference: "This diagnosis belongs to user #5"
+
+
+4. INDEX
+   Makes searching faster.
+   
+   Without index:
+   Finding user by email → Check ALL rows one by one (slow)
+   
+   With index:
+   Finding user by email → Jump directly to it (fast!)
+   
+   Like book index - instead of reading entire book, jump to page number.
+
+
+5. RELATIONSHIP TYPES
+   
+   ONE-TO-MANY:
+   - One user → Many diagnoses
+   - One user → Many saved plants
+   - One user → Many feedbacks
+   
+   Example:
+   User John (id=1) has:
+   - diagnosis_history row (id=1, user_id=1)
+   - diagnosis_history row (id=2, user_id=1)
+   - diagnosis_history row (id=3, user_id=1)
+
+
+YOUR DATABASE SCHEMA
+--------------------------------------------------------------------------------
+
+You have 5 main tables:
+
+1. USERS TABLE
+   Stores user accounts
+   
+   ┌──────────────┬──────────────┬────────────────┬─────────────────┐
+   │ Column       │ Type         │ Constraints    │ Description     │
+   ├──────────────┼──────────────┼────────────────┼─────────────────┤
+   │ id           │ INTEGER      │ PRIMARY KEY    │ Unique user ID  │
+   │ name         │ VARCHAR      │ NOT NULL       │ User's name     │
+   │ email        │ VARCHAR      │ UNIQUE, INDEX  │ Email (login)   │
+   │ password     │ VARCHAR      │ NOT NULL       │ Hashed password │
+   │ is_admin     │ BOOLEAN      │ DEFAULT FALSE  │ Admin status    │
+   │ created_at   │ TIMESTAMP    │ DEFAULT NOW    │ Signup date     │
+   └──────────────┴──────────────┴────────────────┴─────────────────┘
+   
+   Indexes:
+   - Primary key on id (automatic)
+   - Index on email (for fast login queries)
+
+
+2. DIAGNOSIS_HISTORY TABLE
+   Stores all past disease diagnoses
+   
+   ┌──────────────┬──────────────┬────────────────┬─────────────────┐
+   │ Column       │ Type         │ Constraints    │ Description     │
+   ├──────────────┼──────────────┼────────────────┼─────────────────┤
+   │ id           │ INTEGER      │ PRIMARY KEY    │ Unique ID       │
+   │ user_id      │ INTEGER      │ FOREIGN KEY    │ Links to users  │
+   │ diagnosis_   │ VARCHAR      │                │ 'single' or     │
+   │   type       │              │                │   'batch'       │
+   │ image_name   │ VARCHAR      │                │ Uploaded file   │
+   │ disease_name │ VARCHAR      │                │ Detected disease│
+   │ confidence   │ FLOAT        │                │ AI confidence   │
+   │ alternatives │ JSON         │                │ Top 3 guesses   │
+   │ remedy_info  │ JSON         │                │ Treatment info  │
+   │ diagnosed_at │ TIMESTAMP    │ INDEX          │ When diagnosed  │
+   │ notes        │ TEXT         │                │ User notes      │
+   │ status       │ VARCHAR      │ DEFAULT 'active'│ active/archived│
+   └──────────────┴──────────────┴────────────────┴─────────────────┘
+   
+   Indexes:
+   - Primary key on id
+   - Index on diagnosed_at (for sorting by date)
+   
+   JSON columns explained:
+   alternatives stores array:
+   [
+     {"class_name": "Tomato__Late_blight", "confidence": 0.95},
+     {"class_name": "Tomato__Early_blight", "confidence": 0.03},
+     {"class_name": "Tomato_healthy", "confidence": 0.01}
+   ]
+   
+   remedy_info stores object:
+   {
+     "description": "Late blight is a fungal disease...",
+     "organic_remedies": ["Copper spray", "Neem oil"],
+     "prevention": ["Remove infected leaves", "Improve air circulation"]
+   }
+
+
+3. SAVED_PLANTS TABLE
+   User's plant collection (My Garden)
+   
+   ┌──────────────┬──────────────┬────────────────┬─────────────────┐
+   │ Column       │ Type         │ Constraints    │ Description     │
+   ├──────────────┼──────────────┼────────────────┼─────────────────┤
+   │ id           │ INTEGER      │ PRIMARY KEY    │ Unique ID       │
+   │ user_id      │ INTEGER      │ FOREIGN KEY    │ Links to users  │
+   │ plant_name   │ VARCHAR      │                │ Plant type      │
+   │ disease_name │ VARCHAR      │                │ Disease detected│
+   │ confidence   │ FLOAT        │                │ AI confidence   │
+   │ notes        │ TEXT         │                │ User notes      │
+   │ status       │ VARCHAR      │                │ monitoring/     │
+   │              │              │                │ treated/        │
+   │              │              │                │ recovered       │
+   │ created_at   │ TIMESTAMP    │                │ When saved      │
+   └──────────────┴──────────────┴────────────────┴─────────────────┘
+
+
+4. REMEDIES TABLE
+   Disease treatment information
+   
+   ┌──────────────────┬──────────────┬────────────┬─────────────────┐
+   │ Column           │ Type         │ Constraints│ Description     │
+   ├──────────────────┼──────────────┼────────────┼─────────────────┤
+   │ id               │ INTEGER      │ PRIMARY KEY│ Unique ID       │
+   │ disease_name     │ VARCHAR      │ UNIQUE     │ Disease name    │
+   │ description      │ TEXT         │            │ About disease   │
+   │ organic_remedies │ JSON         │            │ Natural cures   │
+   │ chemical_        │ JSON         │            │ Pesticides/     │
+   │   treatments     │              │            │   fungicides    │
+   │ prevention_tips  │ JSON         │            │ How to prevent  │
+   │ products         │ JSON         │            │ Recommended     │
+   │                  │              │            │   products      │
+   └──────────────────┴──────────────┴────────────┴─────────────────┘
+   
+   This is pre-populated with data for 44 diseases.
+
+
+5. FEEDBACK TABLE
+   User feedback submissions
+   
+   ┌──────────────┬──────────────┬────────────────┬─────────────────┐
+   │ Column       │ Type         │ Constraints    │ Description     │
+   ├──────────────┼──────────────┼────────────────┼─────────────────┤
+   │ id           │ INTEGER      │ PRIMARY KEY    │ Unique ID       │
+   │ user_id      │ INTEGER      │ FOREIGN KEY    │ Links to users  │
+   │ feedback_type│ VARCHAR      │                │ bug/feature/    │
+   │              │              │                │ general         │
+   │ message      │ TEXT         │                │ Feedback text   │
+   │ status       │ VARCHAR      │ DEFAULT        │ pending/reviewed│
+   │ created_at   │ TIMESTAMP    │                │ When submitted  │
+   └──────────────┴──────────────┴────────────────┴─────────────────┘
+
+
+DATABASE RELATIONSHIPS (ERD - Entity Relationship Diagram)
+--------------------------------------------------------------------------------
+
+                    ┌─────────────┐
+                    │   USERS     │
+                    ├─────────────┤
+                    │ id (PK)     │
+                    │ name        │
+                    │ email       │
+                    │ password    │
+                    │ is_admin    │
+                    └──────┬──────┘
+                           │
+           ┌───────────────┼───────────────┬──────────────┐
+           │               │               │              │
+           │               │               │              │
+    ┌──────▼──────┐ ┌──────▼──────┐ ┌─────▼──────┐ ┌────▼────────┐
+    │ DIAGNOSIS   │ │ SAVED       │ │ FEEDBACK   │ │ (Other      │
+    │ HISTORY     │ │ PLANTS      │ │            │ │  tables)    │
+    ├─────────────┤ ├─────────────┤ ├────────────┤ └─────────────┘
+    │ id (PK)     │ │ id (PK)     │ │ id (PK)    │
+    │ user_id(FK) │ │ user_id(FK) │ │ user_id(FK)│
+    │ disease     │ │ plant_name  │ │ message    │
+    │ confidence  │ │ disease     │ │ status     │
+    │ ...         │ │ ...         │ │ ...        │
+    └─────────────┘ └─────────────┘ └────────────┘
+
+PK = Primary Key (unique identifier)
+FK = Foreign Key (links to another table)
+
+
+SQL QUERIES (WHAT HAPPENS BEHIND THE SCENES)
+--------------------------------------------------------------------------------
+
+Your Python code uses SQLAlchemy, which converts to SQL automatically.
+
+1. CREATE USER (Signup)
+   
+   Python (SQLAlchemy):
+   ```python
+   new_user = User(name="John", email="john@email.com", password="hashed")
+   db.add(new_user)
+   db.commit()
+   ```
+   
+   Actual SQL executed:
+   ```sql
+   INSERT INTO users (name, email, password, is_admin, created_at)
+   VALUES ('John', 'john@email.com', 'hashed_password', false, NOW());
+   ```
+
+
+2. FIND USER (Login)
+   
+   Python:
+   ```python
+   user = db.query(User).filter(User.email == "john@email.com").first()
+   ```
+   
+   SQL:
+   ```sql
+   SELECT * FROM users WHERE email = 'john@email.com' LIMIT 1;
+   ```
+
+
+3. GET USER'S HISTORY
+   
+   Python:
+   ```python
+   history = db.query(DiagnosisHistory)\
+               .filter(DiagnosisHistory.user_id == 5)\
+               .order_by(DiagnosisHistory.diagnosed_at.desc())\
+               .limit(50)\
+               .all()
+   ```
+   
+   SQL:
+   ```sql
+   SELECT * FROM diagnosis_history
+   WHERE user_id = 5
+   ORDER BY diagnosed_at DESC
+   LIMIT 50;
+   ```
+
+
+4. SAVE DIAGNOSIS
+   
+   Python:
+   ```python
+   diagnosis = DiagnosisHistory(
+       user_id=5,
+       disease_name="Tomato Late Blight",
+       confidence=0.95
+   )
+   db.add(diagnosis)
+   db.commit()
+   ```
+   
+   SQL:
+   ```sql
+   INSERT INTO diagnosis_history (user_id, disease_name, confidence, diagnosed_at)
+   VALUES (5, 'Tomato Late Blight', 0.95, NOW());
+   ```
+
+
+5. DELETE DIAGNOSIS
+   
+   Python:
+   ```python
+   diagnosis = db.query(DiagnosisHistory).filter(DiagnosisHistory.id == 10).first()
+   db.delete(diagnosis)
+   db.commit()
+   ```
+   
+   SQL:
+   ```sql
+   DELETE FROM diagnosis_history WHERE id = 10;
+   ```
+
+
+6. UPDATE USER TO ADMIN
+   
+   Python:
+   ```python
+   user = db.query(User).filter(User.id == 3).first()
+   user.is_admin = True
+   db.commit()
+   ```
+   
+   SQL:
+   ```sql
+   UPDATE users SET is_admin = true WHERE id = 3;
+   ```
+
+
+7. COUNT USERS
+   
+   Python:
+   ```python
+   total = db.query(User).count()
+   ```
+   
+   SQL:
+   ```sql
+   SELECT COUNT(*) FROM users;
+   ```
+
+
+8. JOIN QUERY (Get diagnosis with user info)
+   
+   Python:
+   ```python
+   results = db.query(DiagnosisHistory, User)\
+               .join(User, DiagnosisHistory.user_id == User.id)\
+               .all()
+   ```
+   
+   SQL:
+   ```sql
+   SELECT * FROM diagnosis_history
+   JOIN users ON diagnosis_history.user_id = users.id;
+   ```
+
+
+DATABASE MIGRATIONS
+--------------------------------------------------------------------------------
+
+Migration = Script that creates or modifies database structure
+
+Your migration file: add_diagnosis_history.py
+
+```python
+from sqlalchemy import create_engine
+from src.database import Base, DiagnosisHistory
+
+# Connect to database
+engine = create_engine(DATABASE_URL)
+
+# Create all tables defined in models
+Base.metadata.create_all(engine)
+```
+
+What happens:
+1. Reads DiagnosisHistory model definition
+2. Converts to SQL CREATE TABLE statement
+3. Executes on database
+4. Table created!
+
+Generated SQL:
+```sql
+CREATE TABLE diagnosis_history (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    diagnosis_type VARCHAR,
+    image_name VARCHAR,
+    disease_name VARCHAR,
+    confidence DOUBLE PRECISION,
+    alternatives JSON,
+    remedy_info JSON,
+    diagnosed_at TIMESTAMP,
+    notes TEXT,
+    status VARCHAR DEFAULT 'active'
+);
+
+CREATE INDEX idx_diagnosed_at ON diagnosis_history(diagnosed_at);
+```
+
+
+DATABASE TRANSACTIONS
+--------------------------------------------------------------------------------
+
+Transaction = Group of operations that either ALL succeed or ALL fail
+
+Example scenario:
+```
+1. Create user account
+2. Send welcome email
+3. Create default settings
+
+If step 2 fails (email error), we want to undo step 1 too!
+Otherwise user exists but no email sent = inconsistent state
+```
+
+SQLAlchemy automatic transactions:
+```python
+try:
+    # Start transaction (automatic)
+    user = User(name="John", email="john@email.com")
+    db.add(user)
+    
+    # Do other things
+    send_welcome_email(user.email)
+    
+    # If all succeeds, commit
+    db.commit()
+except Exception:
+    # If anything fails, rollback (undo everything)
+    db.rollback()
+    raise
+```
+
+
+DATABASE SECURITY
+--------------------------------------------------------------------------------
+
+1. SQL INJECTION PREVENTION
+   
+   BAD (Vulnerable):
+   ```python
+   # NEVER do this!
+   email = request.get("email")
+   query = f"SELECT * FROM users WHERE email = '{email}'"
+   ```
+   
+   Attacker sends: email = "'; DROP TABLE users; --"
+   Query becomes: SELECT * FROM users WHERE email = ''; DROP TABLE users; --'
+   DELETES ENTIRE TABLE!
+   
+   GOOD (Safe):
+   ```python
+   # SQLAlchemy prevents this automatically
+   user = db.query(User).filter(User.email == email).first()
+   ```
+   
+   SQLAlchemy escapes special characters, preventing injection.
+
+
+2. PASSWORD STORAGE
+   
+   NEVER store plain passwords!
+   ```
+   User signs up with password: "mypass123"
+   We hash it: "$2b$12$KpVq.x4z5YHxX..."
+   Store hash in database
+   
+   User logs in: "mypass123"
+   We hash it again: "$2b$12$KpVq.x4z5YHxX..."
+   Compare hashes → Match → Login success!
+   ```
+
+
+3. USER OWNERSHIP
+   
+   Always check user owns the data:
+   ```python
+   # Get diagnosis
+   diagnosis = db.query(DiagnosisHistory).filter(
+       DiagnosisHistory.id == diagnosis_id,
+       DiagnosisHistory.user_id == current_user.id  # Security check!
+   ).first()
+   ```
+   
+   Prevents users from accessing other users' data.
+
+
+DATABASE CONNECTION MANAGEMENT
+--------------------------------------------------------------------------------
+
+Your code uses connection pooling:
+
+```python
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+# Create engine (connection pool)
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=10,        # Keep 10 connections ready
+    max_overflow=20      # Can create 20 more if needed
+)
+
+# Create session factory
+SessionLocal = sessionmaker(bind=engine)
+
+# Dependency for routes
+def get_db():
+    db = SessionLocal()  # Get connection from pool
+    try:
+        yield db             # Use it
+    finally:
+        db.close()           # Return to pool
+```
+
+Why connection pooling?
+- Creating new connection = Slow
+- Reusing connections = Fast
+- 10 ready connections can handle many requests
+
+
+DATABASE INDEXES (PERFORMANCE)
+--------------------------------------------------------------------------------
+
+Index = Fast lookup structure
+
+Example: Finding user by email
+
+WITHOUT INDEX:
+┌────┬──────┬─────────────────┐
+│ id │ name │     email       │ ← Scan row 1
+├────┼──────┼─────────────────┤
+│  1 │ John │ john@email.com  │ ← Scan row 2
+├────┼──────┼─────────────────┤
+│  2 │ Jane │ jane@email.com  │ ← Scan row 3
+├────┼──────┼─────────────────┤
+│  3 │ Bob  │ bob@email.com   │ ← Scan row 4
+├────┼──────┼─────────────────┤
+│... │ ...  │ ...             │ ← Scan all rows!
+└────┴──────┴─────────────────┘
+Time: O(n) - Linear (slow for large tables)
+
+WITH INDEX ON EMAIL:
+Index:
+bob@email.com   → row 3
+jane@email.com  → row 2
+john@email.com  → row 1
+
+Jump directly to row! Time: O(log n) - Logarithmic (very fast)
+
+Your indexes:
+- users.email (for login queries)
+- diagnosis_history.diagnosed_at (for sorting by date)
+
+
+JSON COLUMNS (ADVANCED FEATURE)
+--------------------------------------------------------------------------------
+
+PostgreSQL supports JSON - store complex data in single column.
+
+Example: alternatives column in diagnosis_history
+
+Instead of creating separate table:
+┌────┬───────────────┬────────────┐
+│ id │ disease_name  │ confidence │
+├────┼───────────────┼────────────┤
+│  1 │ Late Blight   │ 0.95       │
+│  2 │ Early Blight  │ 0.03       │
+│  3 │ Healthy       │ 0.01       │
+└────┴───────────────┴────────────┘
+
+Store as JSON in ONE column:
+┌────┬───────────────────────────────────────┐
+│ id │           alternatives                │
+├────┼───────────────────────────────────────┤
+│ 1  │ [{"disease": "Late Blight", "conf":   │
+│    │   0.95}, {"disease": "Early Blight",  │
+│    │   "conf": 0.03}, ...]                 │
+└────┴───────────────────────────────────────┘
+
+Benefits:
+- Flexible structure
+- Easy to store arrays
+- No extra tables needed
+- Can query inside JSON (advanced)
+
+
+DATABASE BACKUP & RECOVERY
+--------------------------------------------------------------------------------
+
+PostgreSQL backup:
+```bash
+# Backup entire database
+pg_dump vanaspati > backup.sql
+
+# Restore from backup
+psql vanaspati < backup.sql
+```
+
+Best practices:
+- Daily automated backups
+- Store backups in different location
+- Test restore process
+
+
+SCALABILITY CONSIDERATIONS
+--------------------------------------------------------------------------------
+
+As your app grows:
+
+1. VERTICAL SCALING (Upgrade server)
+   - More RAM
+   - Faster CPU
+   - Better disk (SSD)
+
+2. HORIZONTAL SCALING (More servers)
+   - Read replicas (copies for reading)
+   - Master-slave replication
+   - Sharding (split data across servers)
+
+3. OPTIMIZATION
+   - Add more indexes
+   - Query optimization
+   - Caching frequently accessed data
+
+
+VIVA TIPS FOR DATABASE
+--------------------------------------------------------------------------------
+
+1. START WITH PURPOSE:
+   "We use PostgreSQL to permanently store all application data - users,
+   diagnoses, saved plants. It's a reliable, industry-standard database"
+
+2. EXPLAIN TABLE STRUCTURE:
+   "We have 5 main tables: users (accounts), diagnosis_history (all past
+   diagnoses), saved_plants (user's garden), remedies (treatment info),
+   and feedback (user suggestions)"
+
+3. MENTION RELATIONSHIPS:
+   "One user can have many diagnoses - this is a one-to-many relationship
+   implemented using foreign keys. The user_id in diagnosis_history links
+   to id in users table"
+
+4. HIGHLIGHT SQLALCHEMY ORM:
+   "We use SQLAlchemy ORM which lets us work with database using Python
+   objects instead of writing SQL. It's safer and more maintainable"
+
+5. SECURITY ASPECTS:
+   - Password hashing (never store plain passwords)
+   - SQL injection prevention (ORM handles this)
+   - User ownership checks (users only access their own data)
+
+6. EXPLAIN MIGRATIONS:
+   "When we need to change database structure, we write migration scripts.
+   For example, we created diagnosis_history table with a migration that
+   defines all columns, data types, and relationships"
+
+7. JSON COLUMNS:
+   "PostgreSQL supports JSON columns which let us store complex data like
+   arrays of alternatives or remedy information without creating many
+   separate tables"
+
+8. SHOW UNDERSTANDING OF QUERIES:
+   Example: "When user logs in, we query users table by email, verify
+   password hash, and return user data. When viewing history, we query
+   diagnosis_history filtered by user_id and ordered by date"
+
+Remember: Database is the MEMORY of your application. Everything that needs
+to persist across sessions goes here!

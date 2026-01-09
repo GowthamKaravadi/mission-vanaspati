@@ -10,24 +10,21 @@
 
 ---
 
-### ☁️ Azure Deployment (Choose ONE)
+### ☁️ Azure Deployment
 
-#### 1️⃣ Quick & Easy
-**[AZURE_READY_TO_DEPLOY.md](AZURE_READY_TO_DEPLOY.md)** - Fast deployment (10-15 min)
-- 3-command automated deployment
-- For users familiar with command line
+#### 📖 Complete Guide (Recommended)
+**[COMPLETE_AZURE_DEPLOYMENT_GUIDE.md](COMPLETE_AZURE_DEPLOYMENT_GUIDE.md)** - All-in-one guide (30-45 min)
+- Step-by-step for beginners (zero Azure knowledge required)
+- Automated deployment using scripts
+- Cost breakdown & budget optimization
+- Troubleshooting & quick reference commands
 
-#### 2️⃣ Step-by-Step
-**[BEGINNER_DEPLOYMENT_GUIDE.md](BEGINNER_DEPLOYMENT_GUIDE.md)** - Detailed guide (30 min)
-- For first-time Azure users
-- Explains each step
-- Includes screenshots and explanations
-
-#### 3️⃣ Budget Conscious
-**[BUDGET_OPTIMIZED_DEPLOYMENT.md](BUDGET_OPTIMIZED_DEPLOYMENT.md)** - Maximize your $69
-- Cost-saving strategies
-- Start/stop commands
-- Extend hosting to 5-8 months
+#### 🛠️ Manual Deployment
+**[MANUAL_AZURE_DEPLOYMENT.md](MANUAL_AZURE_DEPLOYMENT.md)** - Full control (35-40 min)
+- Run every command yourself
+- Understand each Azure resource
+- For those who want complete control
+- Includes verification steps
 
 ---
 
@@ -36,7 +33,8 @@
 ### Local Development
 ```bash
 # Start backend
-python -m uvicorn src.fastapi_test:app --reload
+cd "D:\Mission Vanaspati"
+python -m uvicorn src.app:app --reload
 
 # Start frontend
 cd frontend-react && npm run dev
@@ -47,19 +45,21 @@ cd frontend-react && npm run dev
 # Login
 az login
 
-# Deploy
-.\deploy-azure.ps1 -ResourceGroupName "vanaspati-rg" -Location "eastus" -AppName "your-unique-name"
+# Automated Deploy
+.\deploy-azure.ps1 -AppName "your-unique-name"
+
+# Manual Deploy - See MANUAL_AZURE_DEPLOYMENT.md
 ```
 
 ### Cost Management
 ```bash
 # Stop services (save money)
-az webapp stop --resource-group vanaspati-rg --name your-app
-az postgres flexible-server stop --resource-group vanaspati-rg --name your-db
+az webapp stop --resource-group mission-vanaspati-rg --name your-app
+az postgres flexible-server stop --resource-group mission-vanaspati-rg --name your-app-db
 
 # Start services
-az webapp start --resource-group vanaspati-rg --name your-app
-az postgres flexible-server start --resource-group vanaspati-rg --name your-db
+az webapp start --resource-group mission-vanaspati-rg --name your-app
+az postgres flexible-server start --resource-group mission-vanaspati-rg --name your-app-db
 ```
 
 ---
@@ -67,22 +67,23 @@ az postgres flexible-server start --resource-group vanaspati-rg --name your-db
 ## File Structure
 
 ```
-📄 README.md                        ← Main documentation
-📄 DOCS.md                          ← This navigation file
-📄 AZURE_READY_TO_DEPLOY.md        ← Quick Azure deployment
-📄 BEGINNER_DEPLOYMENT_GUIDE.md    ← Detailed Azure guide
-📄 BUDGET_OPTIMIZED_DEPLOYMENT.md  ← Cost optimization
+📄 README.md                           ← Main documentation
+📄 DOCS.md                             ← This navigation file
+📄 COMPLETE_AZURE_DEPLOYMENT_GUIDE.md  ← All-in-one deployment guide
+📄 MANUAL_AZURE_DEPLOYMENT.md          ← Manual deployment commands
 
-🔧 deploy-azure.ps1                ← Automated deployment script
-🔧 azure-cleanup.ps1               ← Delete Azure resources
+🔧 deploy-azure.ps1                    ← Automated deployment script
+🔧 azure-cleanup.ps1                   ← Delete Azure resources
 
-📁 src/                            ← Backend code
-📁 frontend-react/                 ← Frontend code
-📁 models/                         ← ML model files
+📁 src/                                ← Backend code (FastAPI)
+📁 frontend-react/                     ← Frontend code (React + Vite)
+📁 models/                             ← ML model files
+📁 VIVA_DOCUMENTATION/                 ← Viva preparation docs
 ```
 
 ---
 
 **New to the project?** Start with [README.md](README.md)  
-**Ready to deploy?** Go to [AZURE_READY_TO_DEPLOY.md](AZURE_READY_TO_DEPLOY.md)  
+**Ready to deploy?** Go to [COMPLETE_AZURE_DEPLOYMENT_GUIDE.md](COMPLETE_AZURE_DEPLOYMENT_GUIDE.md)  
+**Want full control?** See [MANUAL_AZURE_DEPLOYMENT.md](MANUAL_AZURE_DEPLOYMENT.md)  
 **Need help?** Check [README.md → Troubleshooting](README.md#-troubleshooting)

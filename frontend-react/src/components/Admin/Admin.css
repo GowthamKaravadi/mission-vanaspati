@@ -55,6 +55,13 @@
   cursor: pointer;
   transition: all 0.2s ease;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-icon {
+  font-size: 1.1rem;
 }
 
 .tab-btn:hover {
@@ -100,20 +107,33 @@
 }
 
 .stat-icon {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 700;
-  background: var(--bg-secondary);
-  width: 60px;
-  height: 60px;
+  background: var(--gradient-secondary);
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  border-radius: 12px;
+  border: none;
+  color: var(--accent);
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.1);
+}
+
+.stat-icon.admin-icon {
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.1) 0%, rgba(82, 183, 136, 0.15) 100%);
+  color: var(--accent);
+}
+
+.stat-icon.active-icon {
+  background: linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(129, 199, 132, 0.15) 100%);
+  color: var(--success);
+}
+
+.stat-icon.new-icon {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.15) 100%);
+  color: var(--warning);
 }
 
 .stat-info {
@@ -290,11 +310,13 @@
 }
 
 .action-icon {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  letter-spacing: 0.05em;
+  font-size: 2.5rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
 }
 
 .action-label {
@@ -453,14 +475,20 @@
 }
 
 .insight-icon {
-  font-size: 2rem;
+  font-size: 1.5rem;
   background: linear-gradient(135deg, #2d6a4f, #52b788);
+  color: white;
   width: 60px;
   height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.insight-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .insight-content {
@@ -479,6 +507,25 @@
   font-size: 1.2rem;
   font-weight: 600;
   margin: 0;
+}
+
+.section-title-icon {
+  color: var(--primary, #2d6a4f);
+  margin-right: 8px;
+}
+
+.growth-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trend-up {
+  color: #10b981;
+}
+
+.trend-down {
+  color: #ef4444;
 }
 
 @media (max-width: 768px) {

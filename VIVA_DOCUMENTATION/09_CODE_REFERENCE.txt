@@ -1,0 +1,1454 @@
+================================================================================
+                    COMPLETE CODE REFERENCE GUIDE
+                    Mission Vanaspati - All Classes, Functions & Methods
+================================================================================
+
+This document explains EVERY class, function, and method in your project.
+Use this as a quick reference to understand what each piece of code does.
+
+
+================================================================================
+SECTION 1: PYTHON BACKEND FILES
+================================================================================
+
+================================================================================
+FILE: src/database.py
+PURPOSE: Database models and connection setup
+================================================================================
+
+IMPORTS EXPLAINED:
+-----------------
+from sqlalchemy import create_engine, Column, Integer, String...
+  → SQLAlchemy is Python's most popular database toolkit
+  → create_engine: Creates connection to database
+  → Column, Integer, String: Define table columns and their types
+
+from passlib.context import CryptContext
+  → Passlib is a password hashing library
+  → CryptContext: Manages password hashing algorithms
+
+from urllib.parse import quote_plus
+  → Encodes special characters in password for URL safety
+
+import os
+  → Python's built-in module for environment variables
+  → Used for secure configuration management
+
+
+CONFIGURATION:
+--------------
+# Environment variables for database credentials (SECURE!)
+DB_USER = os.getenv("DB_USER", "missionvanaspati")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "mI$$ion_van@spati")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "vanaspati_db")
+
+  → os.getenv("NAME", "default"): Get environment variable or use default
+  → Credentials are NOT hardcoded in source code
+  → Production uses environment variables, development uses defaults
+  → This is a security best practice
+
+password = quote_plus(DB_PASSWORD)
+  → Encodes special characters (@, $, etc.) for URL safety
+
+DATABASE_URL = os.getenv("DATABASE_URL", 
+    f"postgresql://{DB_USER}:{password}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+  → Supports direct DATABASE_URL (common in cloud platforms like Heroku, Azure)
+  → Falls back to constructed URL from individual components
+  → Format: postgresql://username:password@host:port/database_name
+
+engine = create_engine(DATABASE_URL)
+  → Creates database engine - the core connection interface
+  → Think of it as opening a pipe to the database
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+  → Factory that creates database sessions
+  → Session = a temporary connection for database operations
+  → autocommit=False: Changes only saved when you explicitly commit
+  → autoflush=False: Data written to DB only on commit, not automatically
+
+Base = declarative_base()
+  → Base class that all your models inherit from
+  → Provides mapping between Python classes and database tables
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+  → Password hasher using bcrypt algorithm
+  → bcrypt: Industry-standard secure password hashing
+  → deprecated="auto": Automatically handles old hash formats
+
+
+--------------------------------------------------------------------------------
+CLASS: User(Base)
+--------------------------------------------------------------------------------
+PURPOSE: Represents a user in the system
+
+TABLE NAME: "users"
+
+COLUMNS (Database Fields):
+  id = Column(Integer, primary_key=True, index=True)
+    → Unique identifier for each user
+    → primary_key=True: This is THE unique identifier
+    → index=True: Creates database index for faster lookups
+
+  username = Column(String, unique=True, index=True, nullable=False)
+    → User's display name
+    → unique=True: No two users can have same username
+    → nullable=False: Cannot be empty (required field)
+
+  email = Column(String, unique=True, index=True, nullable=False)
+    → User's email address
+    → Used for login and identification
+
+  hashed_password = Column(String, nullable=False)
+    → Encrypted version of password
+    → NEVER store plain text passwords!
+
+  is_active = Column(Boolean, default=True)
+    → Whether account is enabled
+    → default=True: New accounts are active by default
+
+  is_admin = Column(Boolean, default=False)
+    → Whether user has admin privileges
+    → default=False: Regular users by default
+
+  created_at = Column(DateTime, default=datetime.utcnow)
+    → When account was created
+    → Automatically set to current time
+
+METHODS:
+
+  def verify_password(self, password: str) -> bool:
+    PURPOSE: Check if entered password matches stored hash
+    HOW IT WORKS:
+      1. Takes plain text password user entered
+      2. Compares with stored hash using bcrypt
+      3. Returns True if match, False if not
+    USAGE: user.verify_password("user_entered_password")
+
+  @staticmethod
+  def hash_password(password: str) -> str:
+    PURPOSE: Convert plain text password to secure hash
+    HOW IT WORKS:
+      1. Takes plain text password
+      2. Applies bcrypt hashing algorithm
+      3. Returns hash string to store in database
+    WHY @staticmethod: Doesn't need 'self', can be called without instance
+    USAGE: User.hash_password("new_password")
+
+
+--------------------------------------------------------------------------------
+CLASS: Remedy(Base)
+--------------------------------------------------------------------------------
+PURPOSE: Stores disease information and treatment recommendations
+
+TABLE NAME: "remedies"
+
+COLUMNS:
+  id = Column(Integer, primary_key=True, index=True)
+    → Unique identifier
+
+  class_name = Column(String, unique=True, index=True, nullable=False)
+    → Disease name matching AI model output
+    → Example: "Tomato___Late_blight"
+
+  description = Column(Text, nullable=False)
+    → Detailed description of the disease
+    → Text type allows longer content than String
+
+  remedies = Column(ARRAY(Text), nullable=False)
+    → List of treatment steps
+    → ARRAY: PostgreSQL array type, stores multiple values
+    → Example: ["Remove infected leaves", "Apply fungicide", "Improve drainage"]
+
+  products = Column(JSON, nullable=True)
+    → Product recommendations as JSON
+    → JSON type: Flexible structure for nested data
+    → nullable=True: Optional field
+    → Example: [{"name": "Neem Oil", "link": "amazon.com/..."}]
+
+  created_at = Column(DateTime, default=datetime.utcnow)
+    → When remedy was added
+
+
+--------------------------------------------------------------------------------
+CLASS: Feedback(Base)
+--------------------------------------------------------------------------------
+PURPOSE: Stores user feedback and bug reports
+
+TABLE NAME: "feedback"
+
+COLUMNS:
+  id, email, subject, message → Basic feedback info
+  
+  type = Column(String, default="bug")
+    → Category of feedback
+    → Values: "bug", "feature", "general"
+  
+  status = Column(String, default="pending")
+    → Admin tracking status
+    → Values: "pending", "reviewed", "resolved"
+
+
+--------------------------------------------------------------------------------
+CLASS: SavedPlant(Base)
+--------------------------------------------------------------------------------
+PURPOSE: User's personal plant collection ("My Garden" feature)
+
+TABLE NAME: "saved_plants"
+
+COLUMNS:
+  user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    → Links plant to specific user
+    → ForeignKey: References 'id' column in 'users' table
+    → This creates the relationship: "This plant belongs to this user"
+
+  plant_name, disease_name, confidence → Diagnosis information
+  
+  notes = Column(Text, nullable=True)
+    → User's personal notes about the plant
+  
+  status = Column(String, default="monitoring")
+    → Plant health tracking
+    → Values: "monitoring", "treating", "recovered"
+
+  updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    → Last modification time
+    → onupdate=datetime.utcnow: Automatically updates when record changes
+
+
+--------------------------------------------------------------------------------
+CLASS: DiagnosisHistory(Base)
+--------------------------------------------------------------------------------
+PURPOSE: Stores all prediction history for users
+
+TABLE NAME: "diagnosis_history"
+
+COLUMNS:
+  diagnosis_type = Column(String, nullable=False)
+    → "single" or "batch" - how many images were analyzed
+
+  alternatives = Column(JSON)
+    → Other possible diseases with lower confidence
+    → Stored as JSON for flexible structure
+
+  remedy_info = Column(JSON)
+    → Treatment information at time of diagnosis
+
+
+--------------------------------------------------------------------------------
+FUNCTIONS:
+--------------------------------------------------------------------------------
+
+def get_db():
+    """Database session dependency for FastAPI"""
+    PURPOSE: Provides database connection for API endpoints
+    
+    HOW IT WORKS:
+      1. Creates new database session
+      2. Yields it (gives it to the endpoint)
+      3. Finally closes session when endpoint is done
+    
+    WHY 'yield' NOT 'return':
+      - yield creates a generator
+      - try/finally ensures session ALWAYS closes
+      - Prevents database connection leaks
+    
+    USAGE in FastAPI:
+      @app.get("/users")
+      def get_users(db: Session = Depends(get_db)):
+          # db is now available for database operations
+
+
+def init_db():
+    """Initialize database tables"""
+    PURPOSE: Creates all tables defined by your models
+    
+    HOW IT WORKS:
+      Base.metadata.create_all(bind=engine)
+      - metadata: Collection of all your table definitions
+      - create_all: Creates tables if they don't exist
+      - bind=engine: Uses your database connection
+    
+    WHEN CALLED: At application startup
+
+
+================================================================================
+FILE: src/auth.py
+PURPOSE: Authentication and authorization logic
+================================================================================
+
+CONSTANTS:
+----------
+SECRET_KEY = "your-secret-key..."
+  → Used to sign JWT tokens
+  → Should be random and kept secret in production
+  → Used for encoding/decoding tokens
+
+ALGORITHM = "HS256"
+  → Hash-based Message Authentication Code with SHA-256
+  → Cryptographic algorithm for JWT signing
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+  → Token valid for 24 hours (60 minutes × 24)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+  → Tells FastAPI where to get tokens
+  → tokenUrl: The endpoint for login
+
+
+--------------------------------------------------------------------------------
+FUNCTIONS:
+--------------------------------------------------------------------------------
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Create a new JWT token"""
+    
+    PARAMETERS:
+      data: Dictionary with user info (usually {"sub": email})
+      expires_delta: How long token should be valid
+    
+    HOW IT WORKS:
+      1. Copy the data dictionary
+      2. Calculate expiration time
+      3. Add expiration to data
+      4. Encode everything with SECRET_KEY
+      5. Return the JWT token string
+    
+    RETURNS: Token string like "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    
+    EXAMPLE:
+      token = create_access_token(
+          data={"sub": "user@email.com", "is_admin": True},
+          expires_delta=timedelta(hours=24)
+      )
+
+
+def verify_token(token: str) -> dict:
+    """Decode and verify a JWT token"""
+    
+    PARAMETERS:
+      token: The JWT token string to verify
+    
+    HOW IT WORKS:
+      1. Try to decode token using SECRET_KEY
+      2. If valid, return the payload (user data)
+      3. If invalid/expired, return None
+    
+    RETURNS: Decoded payload dict or None
+
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+    """Get the currently logged-in user from token"""
+    
+    PARAMETERS:
+      token: Automatically extracted from Authorization header
+      db: Database session (auto-injected)
+    
+    HOW IT WORKS:
+      1. Verify the token
+      2. Extract email from payload
+      3. Look up user in database
+      4. Return user object
+      5. Raise 401 error if any step fails
+    
+    USAGE: As FastAPI dependency
+      @app.get("/protected")
+      def protected_endpoint(user: User = Depends(get_current_user)):
+          return {"message": f"Hello {user.email}"}
+
+
+def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+    """Ensure user is active (not disabled)"""
+    
+    HOW IT WORKS:
+      1. Get current user (calls get_current_user)
+      2. Check if user.is_active is True
+      3. If not active, raise 400 error
+    
+    PURPOSE: Block disabled accounts from accessing API
+
+
+def get_admin_user(current_user: User = Depends(get_current_active_user)) -> User:
+    """Ensure user is an admin"""
+    
+    HOW IT WORKS:
+      1. Get current active user
+      2. Check if user.is_admin is True
+      3. If not admin, raise 403 Forbidden error
+    
+    USAGE: Protect admin-only endpoints
+      @app.delete("/admin/users/{id}")
+      def delete_user(admin: User = Depends(get_admin_user)):
+          # Only admins reach here
+
+
+def validate_password(password: str) -> bool:
+    """Check if password meets security requirements"""
+    
+    REQUIREMENTS:
+      - At least 8 characters
+      - At least one uppercase letter
+      - At least one digit
+    
+    HOW IT WORKS:
+      1. Check length >= 8
+      2. Check any(c.isupper() for c in password)
+      3. Check any(c.isdigit() for c in password)
+      4. Raise HTTPException if any check fails
+    
+    RETURNS: True if valid (or raises exception)
+
+
+================================================================================
+FILE: src/core/model.py
+PURPOSE: Neural network architecture definition
+================================================================================
+
+--------------------------------------------------------------------------------
+CLASS: DiseaseClassifier(nn.Module)
+--------------------------------------------------------------------------------
+PURPOSE: The actual neural network for disease classification
+
+INHERITANCE: nn.Module (PyTorch base class for all neural networks)
+
+CONSTRUCTOR: __init__(self, num_classes, pretrained, freeze_backbone, hidden_units, dropout_rate)
+
+  PARAMETERS:
+    num_classes: How many diseases to classify (44 in your case)
+    pretrained: Use pre-trained ImageNet weights (True = transfer learning)
+    freeze_backbone: Lock ResNet layers from training
+    hidden_units: Size of hidden layer (512 neurons)
+    dropout_rate: Probability of dropping neurons (0.5 = 50%)
+
+  WHAT IT CREATES:
+    1. ResNet50 backbone (pre-trained feature extractor)
+    2. Custom classifier head:
+       - Linear layer: 2048 → 512 neurons
+       - ReLU activation (adds non-linearity)
+       - Dropout (prevents overfitting)
+       - Linear layer: 512 → 44 classes
+
+METHODS:
+
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    PURPOSE: Define how data flows through the network
+    WHAT IT DOES: Simply passes input through backbone
+    CALLED: Automatically when you do model(input)
+    RETURNS: Logits (raw predictions before softmax)
+
+  def get_trainable_parameters(self) -> int:
+    PURPOSE: Count parameters that will be updated during training
+    USAGE: Know how much you're actually training
+
+  def get_total_parameters(self) -> int:
+    PURPOSE: Count ALL parameters in model
+    USAGE: Model size estimation
+
+  def print_model_summary(self):
+    PURPOSE: Display model statistics
+    OUTPUT: Parameter counts, trainable percentage
+
+
+--------------------------------------------------------------------------------
+FUNCTIONS:
+--------------------------------------------------------------------------------
+
+def create_model(num_classes, pretrained, freeze_backbone, hidden_units, dropout_rate, device) -> DiseaseClassifier:
+    """Factory function to create and configure model"""
+    
+    PURPOSE: Convenient way to create model with defaults
+    
+    HOW IT WORKS:
+      1. Create DiseaseClassifier instance
+      2. Move to specified device (CPU/GPU)
+      3. Print summary
+      4. Return configured model
+
+
+def save_model(model, save_path, epoch, optimizer_state, metrics):
+    """Save model checkpoint to disk"""
+    
+    PURPOSE: Persist trained model for later use
+    
+    WHAT IT SAVES:
+      - model_state_dict: All trained weights
+      - model_config: Architecture settings
+      - epoch: Training progress
+      - optimizer_state_dict: Optimizer state for resuming
+      - metrics: Accuracy, loss, etc.
+
+
+def load_model(load_path, device, for_inference) -> DiseaseClassifier:
+    """Load saved model from disk"""
+    
+    PURPOSE: Restore trained model for predictions
+    
+    PARAMETERS:
+      load_path: Where model file is stored
+      device: Where to load (CPU or GPU)
+      for_inference: If True, sets model to evaluation mode
+    
+    RETURNS: Ready-to-use model
+
+
+================================================================================
+FILE: src/core/predictor.py
+PURPOSE: High-level prediction interface
+================================================================================
+
+--------------------------------------------------------------------------------
+CLASS: PlantDiseasePredictor
+--------------------------------------------------------------------------------
+PURPOSE: Complete prediction pipeline - from image to diagnosis
+
+CONSTRUCTOR: __init__(self, model_path, class_mapping_path, device, confidence_threshold, top_k)
+
+  WHAT IT DOES:
+    1. Load trained model from disk
+    2. Load class mapping (index → disease name)
+    3. Setup image transforms
+    4. Select device (GPU if available)
+
+ATTRIBUTES:
+  self.model: The loaded neural network
+  self.idx_to_class: Dictionary {0: "Tomato___healthy", 1: "Tomato___Late_blight", ...}
+  self.num_classes: Total number of disease classes (44)
+  self.transform: Image preprocessing pipeline
+  self.device: Where computations happen
+
+METHODS:
+
+  def _load_class_mapping(self) -> Dict[int, str]:
+    """Load disease names from JSON file"""
+    PRIVATE METHOD (underscore prefix = internal use)
+    
+    HOW IT WORKS:
+      1. Read class_mapping.json
+      2. Swap keys and values
+      3. Return {index: class_name} dictionary
+
+
+  def _is_plant_image(self, image: Image.Image) -> Tuple[bool, str]:
+    """Validate that image contains a plant"""
+    
+    PURPOSE: Filter out non-plant images before prediction
+    
+    CHECKS PERFORMED:
+      1. Image uniformity (reject solid colors, text)
+      2. Green pixel ratio (plants should have green)
+      3. Edge density (leaves have texture)
+      4. Color variance (natural variation)
+      5. Aspect ratio (reject extreme dimensions)
+    
+    RETURNS: (True, "Valid plant image") or (False, "Reason for rejection")
+    
+    WHY THIS MATTERS:
+      - Prevents garbage-in-garbage-out
+      - Users get helpful error messages
+      - Model only processes appropriate images
+
+
+  def _preprocess_image(self, image) -> torch.Tensor:
+    """Convert image to model input format"""
+    
+    HOW IT WORKS:
+      1. Convert to RGB (handle different formats)
+      2. Apply transforms (resize, normalize)
+      3. Add batch dimension
+      4. Return tensor ready for model
+
+
+  def predict(self, image, return_all: bool = False) -> Dict[str, any]:
+    """Make single prediction"""
+    
+    PARAMETERS:
+      image: File path, PIL Image, or image data
+      return_all: Include top-k alternatives
+    
+    HOW IT WORKS:
+      1. Load/convert image
+      2. Validate it's a plant image
+      3. If not plant: return error result
+      4. Preprocess image
+      5. Run through model (with torch.no_grad() for efficiency)
+      6. Apply softmax to get probabilities
+      7. Find highest probability class
+      8. Return result dictionary
+    
+    RETURNS:
+      {
+        'class_name': 'Tomato___Late_blight',
+        'class_idx': 5,
+        'confidence': 0.94,
+        'is_plant': True,
+        'top_k': [...]  # if return_all=True
+      }
+
+
+  def predict_batch(self, images: List, return_all: bool = False) -> List[Dict]:
+    """Make predictions on multiple images"""
+    
+    HOW IT WORKS:
+      1. Validate each image (filter non-plants)
+      2. Preprocess valid images
+      3. Stack into single batch tensor
+      4. Run batch through model (more efficient than one-by-one)
+      5. Process each result
+      6. Merge results maintaining original order
+
+
+  def get_all_classes(self) -> List[str]:
+    """Return all disease class names"""
+    USAGE: Display list of detectable diseases
+
+
+  def get_class_info(self, class_name: str) -> Optional[Dict]:
+    """Get details about a specific class"""
+    RETURNS: {'class_name': '...', 'class_idx': N} or None
+
+
+  def __repr__(self) -> str:
+    """String representation for debugging"""
+    RETURNS: "PlantDiseasePredictor(model=..., classes=44, device=cuda)"
+
+
+
+================================================================================
+SECTION 2: JAVASCRIPT/REACT FRONTEND FILES
+================================================================================
+
+================================================================================
+FILE: frontend-react/src/services/api.js
+PURPOSE: API client for backend communication
+================================================================================
+
+AXIOS SETUP:
+------------
+const api = axios.create({ baseURL: API_URL });
+  → Creates axios instance with base URL
+  → All requests will be relative to this URL
+
+api.interceptors.request.use((config) => {...})
+  → INTERCEPTOR: Runs before EVERY request
+  → Automatically adds Authorization header if token exists
+  → "Bearer {token}" format for JWT authentication
+
+api.interceptors.response.use(response, error => {...})
+  → Runs after EVERY response
+  → On 401 error: Clear storage, redirect to login
+  → Automatic session expiry handling
+
+
+--------------------------------------------------------------------------------
+EXPORTED API OBJECTS:
+--------------------------------------------------------------------------------
+
+authAPI = {
+  signup: (username, email, password) => ...
+    → POST /auth/signup with URL parameters
+    → Creates new user account
+    → RETURNS: { message, email, user_id }
+
+  login: (usernameOrEmail, password) => ...
+    → POST /auth/login with FormData
+    → Authenticates user
+    → RETURNS: { access_token, username, email, is_admin }
+
+  getCurrentUser: () => ...
+    → GET /auth/me
+    → Fetches current user info
+    → RETURNS: { username, email, is_admin, is_active, created_at }
+}
+
+
+predictionAPI = {
+  predict: (file, confidenceThreshold) => ...
+    → POST /predict with file upload (FormData)
+    → Single image prediction
+    → RETURNS: { predicted_class, confidence, top_predictions, filename }
+
+  predictBatch: (files, confidenceThreshold) => ...
+    → POST /predict/batch with multiple files
+    → Batch prediction
+    → RETURNS: { predictions: [...] }
+}
+
+
+adminAPI = {
+  getUsers: () => ...
+    → GET /admin/users
+    → List all users (admin only)
+
+  toggleAdmin: (userId) => ...
+    → PUT /admin/users/{userId}/toggle-admin
+    → Flip admin status
+
+  deleteUser: (userId) => ...
+    → DELETE /admin/users/{userId}
+    → Remove user
+
+  getFeedback: (status) => ...
+    → GET /admin/feedback
+    → List feedback submissions
+
+  updateFeedbackStatus: (feedbackId, status) => ...
+    → PATCH /admin/feedback/{feedbackId}
+    → Update feedback status
+}
+
+
+gardenAPI = {
+  getPlants: () => ...
+    → GET /garden/plants
+    → List user's saved plants
+
+  savePlant: (plantName, diseaseName, confidence, notes, status) => ...
+    → POST /garden/plants
+    → Save plant to garden
+
+  updatePlant: (plantId, notes, status) => ...
+    → PATCH /garden/plants/{plantId}
+    → Update plant info
+
+  deletePlant: (plantId) => ...
+    → DELETE /garden/plants/{plantId}
+    → Remove from garden
+}
+
+
+historyAPI = {
+  getHistory: (limit, offset) => ...
+    → GET /history/diagnosis
+    → Fetch diagnosis history with pagination
+
+  saveHistory: (data) => ...
+    → POST /history/diagnosis
+    → Save new diagnosis
+
+  deleteHistory: (diagnosisId) => ...
+    → DELETE /history/diagnosis/{diagnosisId}
+    → Delete specific entry
+
+  clearHistory: () => ...
+    → DELETE /history/diagnosis
+    → Clear all history
+}
+
+
+================================================================================
+FILE: frontend-react/src/context/AuthContext.jsx
+PURPOSE: Global authentication state management
+================================================================================
+
+WHAT IS CONTEXT?
+----------------
+React Context provides a way to pass data through the component tree without
+passing props manually at every level. Think of it as "global state" for React.
+
+
+HOOK: useAuth()
+---------------
+PURPOSE: Access authentication context from any component
+
+USAGE:
+  const { user, login, logout, isAuthenticated, isAdmin } = useAuth();
+
+RETURNS:
+  user: Current user object or null
+  login: Function to log in
+  signup: Function to register
+  logout: Function to log out
+  loading: Boolean, true while checking auth
+  isAuthenticated: Boolean, true if logged in
+  isAdmin: Boolean, true if user is admin
+
+
+COMPONENT: AuthProvider
+-----------------------
+PURPOSE: Wrap your app to provide auth context
+
+INTERNAL STATE:
+  user: Current user data
+  loading: Auth check in progress
+
+INTERNAL FUNCTIONS:
+
+  checkAuth = async () => {...}
+    PURPOSE: Check if user is already logged in (on app load)
+    HOW: Read token from localStorage, fetch user from API
+    WHEN: On component mount (useEffect)
+
+  login = async (usernameOrEmail, password) => {...}
+    PURPOSE: Authenticate user and store session
+    STEPS:
+      1. Call authAPI.login()
+      2. Extract token, user data from response
+      3. Store in localStorage
+      4. Update user state
+    RETURNS: Response data
+
+  signup = async (username, email, password) => {...}
+    PURPOSE: Create new account
+    JUST CALLS: authAPI.signup() and returns result
+
+  logout = () => {...}
+    PURPOSE: Clear session and log out
+    STEPS:
+      1. Remove token from localStorage
+      2. Remove user info from localStorage
+      3. Set user state to null
+
+
+================================================================================
+FILE: frontend-react/src/context/ThemeContext.jsx
+PURPOSE: Dark/light theme management
+================================================================================
+
+HOOK: useTheme()
+----------------
+RETURNS:
+  isDark: Boolean, true if dark mode
+  toggleTheme: Function to switch themes
+
+
+COMPONENT: ThemeProvider
+------------------------
+INTERNAL STATE:
+  isDark: Current theme (saved to localStorage)
+
+INTERNAL LOGIC:
+  - On mount: Read theme from localStorage
+  - On change: Save to localStorage, add/remove 'dark' class on HTML element
+  - CSS uses .dark class to switch variable values
+
+
+================================================================================
+FILE: frontend-react/src/context/HistoryContext.jsx
+PURPOSE: Diagnosis history management
+================================================================================
+
+HOOK: useHistory()
+------------------
+RETURNS:
+  history: Array of past diagnoses
+  loading: Boolean, fetching in progress
+  total: Total count
+  addToHistory: Function to save diagnosis
+  clearHistory: Function to delete all
+  deleteHistoryItem: Function to delete one
+
+
+FUNCTIONS:
+
+  addToHistory = async (entry) => {...}
+    PURPOSE: Save diagnosis to database and local state
+    STEPS:
+      1. Call historyAPI.saveHistory()
+      2. Get database ID from response
+      3. Add to local state array
+      4. Update total count
+
+  clearHistory = async () => {...}
+    PURPOSE: Delete all history
+    STEPS:
+      1. Call historyAPI.clearHistory()
+      2. Set local state to empty array
+
+  deleteHistoryItem = async (id) => {...}
+    PURPOSE: Delete single entry
+    STEPS:
+      1. Call historyAPI.deleteHistory(id)
+      2. Filter item from local state
+
+
+================================================================================
+FILE: frontend-react/src/components/Dashboard/Dashboard.jsx
+PURPOSE: Main application screen after login
+================================================================================
+
+COMPONENT: Dashboard
+--------------------
+This is the main hub where users interact with the app.
+
+STATE VARIABLES:
+  mode: 'single' | 'batch' - current upload mode
+  files: Array of selected image files
+  results: Prediction results from API
+  loading: Boolean, prediction in progress
+  showFeedback: Boolean, show feedback modal
+  showDiseaseLibrary: Boolean, show library modal
+  showMyGarden: Boolean, show garden modal
+
+HOOKS USED:
+  useAuth(): Get user, logout, isAdmin
+  useTheme(): Get isDark, toggleTheme
+  useHistory(): Get addToHistory function
+  useNavigate(): Programmatic navigation
+
+FUNCTIONS:
+
+  handleFilesSelected = (selectedFiles) => {...}
+    PURPOSE: Store selected files, clear previous results
+    CALLED BY: ImageUpload component
+
+  handleAnalyze = async () => {...}
+    PURPOSE: Send images to API for prediction
+    STEPS:
+      1. Set loading true
+      2. If single mode: Call predictionAPI.predict()
+      3. If batch mode: Call predictionAPI.predictBatch()
+      4. Save results to state
+      5. Add to history
+      6. Show success toast
+      7. Handle errors with toast
+
+  handleLogout = () => {...}
+    PURPOSE: Log out user and redirect
+    STEPS:
+      1. Call logout() from AuthContext
+      2. Show success toast
+      3. Navigate to /login
+
+RENDERED UI:
+  - Header with logo, theme toggle, buttons
+  - Mode selector (single/batch)
+  - ImageUpload component
+  - Analyze button (when files selected)
+  - Results component (when results available)
+  - History component (sidebar)
+  - Modal components (Feedback, DiseaseLibrary, MyGarden)
+
+
+================================================================================
+FILE: frontend-react/src/components/Dashboard/ImageUpload.jsx
+PURPOSE: Image selection and preview
+================================================================================
+
+COMPONENT: ImageUpload
+----------------------
+
+PROPS:
+  mode: 'single' | 'batch'
+  onFilesSelected: Callback function
+
+STATE:
+  previews: Array of {file, preview, id}
+
+HOOKS USED:
+  useDropzone: From react-dropzone library
+    Provides drag-and-drop functionality
+
+FUNCTIONS:
+
+  validateImage = (file) => {...}
+    PURPOSE: Check file before accepting
+    CHECKS:
+      - Size <= 10MB
+      - Type is JPEG or PNG
+    RETURNS: true/false
+
+  onDrop = useCallback((acceptedFiles, rejectedFiles) => {...})
+    PURPOSE: Handle dropped/selected files
+    STEPS:
+      1. Show errors for rejected files
+      2. Validate accepted files
+      3. Create preview URLs (URL.createObjectURL)
+      4. If single mode: Replace existing
+      5. If batch mode: Add to existing
+      6. Call onFilesSelected callback
+
+  removeImage = (id) => {...}
+    PURPOSE: Remove single image from selection
+    
+  clearAll = () => {...}
+    PURPOSE: Remove all images
+    NOTE: Also revokes object URLs to free memory
+
+RENDERED UI:
+  - Dropzone area (when no files)
+  - Preview grid (when files selected)
+  - Remove buttons on each preview
+  - "Add more" dropzone (in batch mode)
+
+
+================================================================================
+FILE: frontend-react/src/components/Dashboard/Results.jsx
+PURPOSE: Display prediction results
+================================================================================
+
+COMPONENT: Results
+------------------
+
+IMPORTS (OPTIMIZED):
+  import api, { gardenAPI } from '../../services/api';
+    → Uses centralized API client (NOT hardcoded URLs)
+    → gardenAPI handles garden-related endpoints
+
+PROPS:
+  results: Prediction data from API
+  mode: 'single' | 'batch'
+
+STATE:
+  remedies: Fetched remedy data
+  savingToGarden: Boolean, save in progress
+
+HOOKS:
+  useEffect: Fetch remedies on mount using api.get('/remedies')
+
+FUNCTIONS:
+
+  saveToGarden = async (className, confidence) => {...}
+    PURPOSE: Add diagnosed plant to My Garden
+    OPTIMIZED IMPLEMENTATION:
+      1. Extract plant name from class name
+      2. Call gardenAPI.savePlant() (uses centralized API)
+      3. Token handling is automatic via axios interceptors
+      4. Show success/error toast
+    NOTE: No longer uses hardcoded localhost URL
+
+  getConfidenceClass = (confidence) => {...}
+    PURPOSE: Return CSS class based on confidence level
+    RETURNS: 'high' | 'medium' | 'low'
+
+  getRemedyInfo = (className) => {...}
+    PURPOSE: Look up remedy for disease
+    RETURNS: {description, remedies, products}
+    NOTE: Debug console.logs removed for production
+
+  handleDownloadPDF = () => {...}
+    PURPOSE: Generate and download PDF report
+    USES: pdfGenerator utility
+
+RENDERED UI:
+  - Disease name
+  - Confidence bar (animated)
+  - Alternative predictions
+  - Disease description
+  - Remedy steps
+  - Product recommendations
+  - Save to Garden button
+  - Download PDF button
+
+
+================================================================================
+FILE: frontend-react/src/components/Dashboard/History.jsx
+PURPOSE: Show past diagnoses
+================================================================================
+
+COMPONENT: History
+------------------
+
+NO PROPS (uses context)
+
+HOOKS:
+  useHistory(): Get history array, loading, functions
+
+FUNCTIONS:
+
+  formatDate = (timestamp) => {...}
+    PURPOSE: Convert timestamp to relative time
+    EXAMPLES: "Just now", "5 minutes ago", "3 days ago"
+
+RENDERED UI:
+  - Loading spinner (while fetching)
+  - Empty state (no history)
+  - List of history items
+  - Each item: type badge, disease name, confidence, delete button
+  - Clear All button
+
+
+================================================================================
+FILE: frontend-react/src/components/Dashboard/MyGarden.jsx
+PURPOSE: User's saved plants collection
+================================================================================
+
+COMPONENT: MyGarden
+-------------------
+
+PROPS:
+  onClose: Function to close modal
+
+STATE:
+  plants: Array of saved plants
+  loading: Boolean
+  editingPlant: ID of plant being edited
+  notes: Edit form value
+  status: Edit form value
+
+FUNCTIONS:
+
+  loadPlants = async () => {...}
+    PURPOSE: Fetch plants from API
+
+  handleDelete = async (plantId) => {...}
+    PURPOSE: Remove plant after confirmation
+
+  handleUpdatePlant = async (plantId) => {...}
+    PURPOSE: Save edits to plant
+
+  startEdit = (plant) => {...}
+    PURPOSE: Enter edit mode for plant
+
+  getStatusColor = (status) => {...}
+    PURPOSE: Return color for status badge
+
+RENDERED UI:
+  - Modal overlay
+  - Plant cards grid
+  - Each card: name, disease, confidence, status
+  - Edit form: status dropdown, notes textarea
+  - Action buttons: edit, delete
+
+
+================================================================================
+FILE: frontend-react/src/components/Dashboard/ProfileDropdown.jsx
+PURPOSE: User menu dropdown
+================================================================================
+
+COMPONENT: ProfileDropdown
+--------------------------
+
+PROPS:
+  user: Current user object
+  isAdmin: Boolean
+  onLogout: Callback
+  onAdminClick: Callback
+  onMyGardenClick: Callback
+
+STATE:
+  isOpen: Boolean, dropdown visible
+
+HOOKS:
+  useRef: For dropdown element reference
+  useEffect: Close on outside click
+
+FUNCTIONS:
+
+  handleClickOutside = (event) => {...}
+    PURPOSE: Close dropdown when clicking outside
+    HOW: Check if click target is inside dropdown ref
+
+  handleMenuClick = (action) => {...}
+    PURPOSE: Execute action and close menu
+
+RENDERED UI:
+  - Profile button with username
+  - Dropdown menu (animated)
+  - User info header
+  - My Garden button
+  - Admin Panel button (if admin)
+  - Logout button
+
+
+
+================================================================================
+SECTION 3: CSS FILES AND CLASSES
+================================================================================
+
+================================================================================
+FILE: frontend-react/src/index.css
+PURPOSE: Global styles and CSS variables
+================================================================================
+
+CSS VARIABLES (Custom Properties):
+----------------------------------
+Variables defined in :root are available everywhere.
+Dark mode overrides in .dark class.
+
+LIGHT MODE (:root):
+  --bg-primary: #f8fdf9      → Main background (light green tint)
+  --bg-card: #ffffff         → Card backgrounds (white)
+  --bg-secondary: #f0f9f4    → Secondary background (lighter green)
+  --text-primary: #1a2e1a    → Main text (dark green)
+  --text-secondary: #5a7c5a  → Secondary text (muted green)
+  --border: #d4e8d4          → Border color (light green)
+  --accent: #2d6a4f          → Primary action color (dark green)
+  --accent-light: #52b788    → Secondary action color (light green)
+
+DARK MODE (.dark):
+  --bg-primary: #0d1f12      → Main background (very dark green)
+  --bg-card: #162821         → Card backgrounds (dark green)
+  --text-primary: #e8f5e9    → Main text (very light green)
+  --accent: #52b788          → Primary action (lighter for contrast)
+
+GRADIENTS:
+  --gradient-primary: Background for buttons, headers
+  --gradient-card: Subtle card backgrounds
+
+
+================================================================================
+FILE: frontend-react/src/components/Dashboard/Dashboard.css
+PURPOSE: Dashboard-specific styles
+================================================================================
+
+MAJOR CSS CLASSES:
+
+.dashboard
+  → Main container, full viewport height
+  → Background gradients for depth
+  → ::before pseudo-element for background image
+
+.dashboard-header
+  → Sticky header at top
+  → Glass morphism effect (backdrop-filter: blur)
+  → z-index: 100 (stays above content)
+
+.header-content
+  → Flexbox container for logo and actions
+  → max-width: 1400px centers content
+
+.logo
+  → Flex container for icon and text
+  → Gradient text using background-clip
+
+.logo-icon
+  → 48x48 square with gradient background
+  → White text on green background
+
+.theme-toggle-large
+  → 52x52 circular button
+  → Hover: rotates 180°, changes color
+
+.icon-btn
+  → Standard icon button
+  → Hover: lifts up, shadow appears
+
+.mode-selector
+  → Flex container for mode buttons
+  → Center aligned
+
+.mode-btn
+  → Toggle button for single/batch
+  → .active class changes style
+
+.upload-container
+  → Container for dropzone
+
+.dropzone
+  → Dashed border upload area
+  → .active class when dragging
+
+.preview-single
+  → Single image preview container
+
+.preview-grid
+  → Grid layout for batch previews
+
+.preview-item
+  → Individual preview card
+  → Position relative for remove button
+
+.btn-remove
+  → X button to remove image
+  → Position absolute top-right
+
+.results-container
+  → Container for prediction results
+
+.result-card
+  → White card with shadow
+  → Contains all result info
+
+.confidence-bar
+  → Background bar for confidence
+  → Contains animated fill
+
+.confidence-fill
+  → Animated fill based on percentage
+  → .high/.medium/.low for colors
+
+.alternatives
+  → Section for alternative predictions
+
+.alternative-item
+  → Individual alternative row
+
+.disease-info
+  → Disease description section
+
+.remedies-list
+  → Ordered list of remedies
+
+.products-grid
+  → Grid for product cards
+
+
+================================================================================
+FILE: frontend-react/src/components/Auth/Auth.css
+PURPOSE: Login and signup page styles
+================================================================================
+
+MAJOR CSS CLASSES:
+
+.auth-container
+  → Full viewport centered layout
+  → Background image with overlay
+
+.auth-card
+  → White card with blur effect
+  → 420px max width, rounded corners
+
+.auth-header
+  → Title and subtitle section
+  → Gradient text for branding
+
+.auth-form
+  → Form container
+
+.form-group
+  → Label + input container
+  → Margin between fields
+
+.form-group input
+  → Styled text inputs
+  → Focus: border color, shadow
+
+.password-hint
+  → Small text with requirements
+
+.btn
+  → Base button styles
+  → Full width
+
+.btn-primary
+  → Primary action button
+  → Dark background, light text
+
+.alert
+  → Notification box
+  → .alert-error: red for errors
+  → .alert-success: green for success
+
+.auth-footer
+  → Links to other auth pages
+  → "Don't have account? Sign up"
+
+
+================================================================================
+FILE: frontend-react/src/components/Admin/Admin.css
+PURPOSE: Admin panel styles
+================================================================================
+
+MAJOR CSS CLASSES:
+
+.admin-panel
+  → Main container
+  → Background image overlay
+
+.admin-header
+  → Fixed header with title
+
+.admin-tabs
+  → Tab navigation bar
+  → Sticky below header
+
+.tab-btn
+  → Individual tab button
+  → .active class for selected
+
+.stats-grid
+  → Grid of stat cards
+
+.stat-card
+  → Individual statistic display
+  → Icon + value + label
+
+.stat-icon
+  → Large icon in gradient circle
+
+.users-section
+  → Container for user table
+
+.users-table
+  → Full data table
+  → Striped rows
+
+.status-badge
+  → .active: green
+  → .inactive: red
+
+.role-badge
+  → .admin: orange
+  → .user: gray
+
+.action-buttons
+  → Container for row actions
+
+.btn-action
+  → Small action button
+  → .btn-toggle, .btn-delete
+
+.feedback-card
+  → Feedback item card
+
+.feedback-type
+  → .bug: red
+  → .feature: blue
+  → .general: purple
+
+.feedback-status
+  → .pending: orange
+  → .reviewed: blue
+  → .resolved: green
+
+
+
+================================================================================
+SECTION 4: QUICK REFERENCE CHEAT SHEET
+================================================================================
+
+PYTHON CLASSES:
+  User         → User accounts (login, password)
+  Remedy       → Disease info and treatments
+  Feedback     → User bug reports
+  SavedPlant   → My Garden plants
+  DiagnosisHistory → Past predictions
+
+PYTHON FUNCTIONS:
+  get_db()           → Get database connection
+  init_db()          → Create tables
+  create_access_token()  → Make JWT token
+  verify_token()     → Check JWT token
+  get_current_user() → Get user from token
+  get_admin_user()   → Verify admin access
+  validate_password() → Check password rules
+
+PYTHON CLASSES (AI):
+  DiseaseClassifier    → Neural network
+  PlantDiseasePredictor → High-level predictor
+
+REACT CONTEXTS:
+  AuthContext   → User login state
+  ThemeContext  → Dark/light mode
+  HistoryContext → Diagnosis history
+
+REACT COMPONENTS:
+  Dashboard      → Main app screen
+  ImageUpload    → File selection
+  Results        → Prediction display
+  History        → Past diagnoses
+  MyGarden       → Saved plants
+  ProfileDropdown → User menu
+  AdminPanel     → Admin interface
+  Login/Signup   → Authentication pages
+
+API OBJECTS:
+  authAPI        → Login, signup, user info
+  predictionAPI  → Single and batch predictions
+  adminAPI       → User management, feedback
+  gardenAPI      → My Garden operations
+  historyAPI     → Diagnosis history
+
+CSS VARIABLE CATEGORIES:
+  --bg-*         → Backgrounds
+  --text-*       → Text colors
+  --border       → Border colors
+  --accent*      → Brand colors
+  --gradient-*   → Gradient definitions
+  --shadow       → Shadow colors
+
+
+================================================================================
+END OF CODE REFERENCE
+================================================================================

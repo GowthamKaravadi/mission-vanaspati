@@ -7,39 +7,49 @@
 }
 
 :root {
-  /* Nothing OS Inspired - Light Mode */
-  --bg-primary: #ffffff;
+  /* Modern Green Theme - Inspired by PictureThis & Plantix */
+  --bg-primary: #f8fdf9;
   --bg-card: #ffffff;
-  --bg-secondary: #f5f5f5;
-  --text-primary: #000000;
-  --text-secondary: #666666;
-  --border: #e0e0e0;
-  --shadow: rgba(0, 0, 0, 0.08);
-  --accent: #ff0000;
-  --accent-light: #ff3333;
+  --bg-secondary: #f0f9f4;
+  --text-primary: #1a2e1a;
+  --text-secondary: #5a7c5a;
+  --border: #d4e8d4;
+  --shadow: rgba(45, 106, 79, 0.08);
+  --accent: #2d6a4f;
+  --accent-light: #52b788;
+  --accent-hover: #1e4d3c;
+  --success: #40916c;
+  --warning: #f59e0b;
+  --danger: #ef4444;
   
-  /* Gradient backgrounds */
-  --bg-gradient-start: #ffffff;
-  --bg-gradient-mid: #fafafa;
-  --bg-gradient-end: #f5f5f5;
+  /* Nature-inspired gradients */
+  --gradient-primary: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%);
+  --gradient-secondary: linear-gradient(135deg, #d8f3dc 0%, #95d5b2 100%);
+  --gradient-card: linear-gradient(145deg, #ffffff 0%, #f0f9f4 100%);
+  --gradient-hover: linear-gradient(135deg, #1e4d3c 0%, #2d6a4f 100%);
 }
 
 .dark {
-  /* Nothing OS Inspired - Dark Mode */
-  --bg-primary: #0a0a0a;
-  --bg-card: #121212;
-  --bg-secondary: #1e1e1e;
-  --text-primary: #f5f5f5;
-  --text-secondary: #b0b0b0;
-  --border: #333333;
-  --shadow: rgba(255, 255, 255, 0.08);
-  --accent: #ff0000;
-  --accent-light: #ff3333;
+  /* Modern Dark Green Theme */
+  --bg-primary: #0d1f12;
+  --bg-card: #162821;
+  --bg-secondary: #1e362b;
+  --text-primary: #e8f5e9;
+  --text-secondary: #a5d6a7;
+  --border: #2d4a3a;
+  --shadow: rgba(82, 183, 136, 0.15);
+  --accent: #52b788;
+  --accent-light: #74c69d;
+  --accent-hover: #95d5b2;
+  --success: #66bb6a;
+  --warning: #fbbf24;
+  --danger: #f87171;
   
-  /* Gradient backgrounds */
-  --bg-gradient-start: #000000;
-  --bg-gradient-mid: #0a0a0a;
-  --bg-gradient-end: #1a1a1a;
+  /* Dark nature gradients */
+  --gradient-primary: linear-gradient(135deg, #2d6a4f 0%, #1e4d3c 100%);
+  --gradient-secondary: linear-gradient(135deg, #1e362b 0%, #2d4a3a 100%);
+  --gradient-card: linear-gradient(145deg, #162821 0%, #1e362b 100%);
+  --gradient-hover: linear-gradient(135deg, #52b788 0%, #2d6a4f 100%);
 }
 
 body {

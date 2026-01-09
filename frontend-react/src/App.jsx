@@ -8,6 +8,7 @@ import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
 import Dashboard from './components/Dashboard/Dashboard';
 import AdminPanel from './components/Admin/AdminPanel';
+import GardenPage from './components/Garden/GardenPage';
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -51,6 +52,14 @@ const AnimatedRoutes = () => {
           element={
             <PrivateRoute>
               <AdminPanel />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/garden" 
+          element={
+            <PrivateRoute>
+              <GardenPage />
             </PrivateRoute>
           } 
         />

@@ -1,13 +1,20 @@
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, ARRAY
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, ARRAY, Float, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 from passlib.context import CryptContext
 from urllib.parse import quote_plus
+import os
 
-# PostgreSQL configuration
-password = quote_plus("mI$$ion_van@spati")
-DATABASE_URL = f"postgresql://missionvanaspati:{password}@localhost:5432/vanaspati_db"
+# PostgreSQL configuration - Use environment variables with fallbacks
+DB_USER = os.getenv("DB_USER", "missionvanaspati")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "mI$$ion_van@spati")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "vanaspati_db")
+
+password = quote_plus(DB_PASSWORD)
+DATABASE_URL = os.getenv("DATABASE_URL", f"postgresql://{DB_USER}:{password}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -42,6 +49,7 @@ class Remedy(Base):
     class_name = Column(String, unique=True, index=True, nullable=False)
     description = Column(Text, nullable=False)
     remedies = Column(ARRAY(Text), nullable=False)
+    products = Column(JSON, nullable=True)  # Store product recommendations as JSON
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -55,6 +63,37 @@ class Feedback(Base):
     type = Column(String, default="bug")  # bug, feature, general
     status = Column(String, default="pending")  # pending, reviewed, resolved
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SavedPlant(Base):
+    __tablename__ = "saved_plants"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    plant_name = Column(String, nullable=False)
+    disease_name = Column(String, nullable=False)
+    confidence = Column(Float, nullable=False)
+    image_path = Column(String, nullable=True)  # Optional: store image reference
+    notes = Column(Text, nullable=True)  # User's personal notes
+    status = Column(String, default="monitoring")  # monitoring, treating, recovered
+    diagnosed_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class DiagnosisHistory(Base):
+    __tablename__ = "diagnosis_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    diagnosis_type = Column(String, nullable=False)  # 'single' or 'batch'
+    image_name = Column(String)
+    disease_name = Column(String, nullable=False)
+    confidence = Column(Float, nullable=False)
+    alternatives = Column(JSON)  # Store alternative predictions
+    remedy_info = Column(JSON)  # Store remedy details
+    diagnosed_at = Column(DateTime, default=datetime.utcnow, index=True)
+    notes = Column(Text)
+    status = Column(String, default='active')  # active, archived
 
 
 def get_db():

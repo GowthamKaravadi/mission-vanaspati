@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
+import { FiUpload, FiAlertTriangle } from 'react-icons/fi';
 import './Dashboard.css';
 
 const ImageUpload = ({ mode, onFilesSelected }) => {
@@ -85,14 +86,14 @@ const ImageUpload = ({ mode, onFilesSelected }) => {
       {previews.length === 0 ? (
         <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`}>
           <input {...getInputProps()} />
-          <div className="upload-icon">📤</div>
+          <div className="upload-icon"><FiUpload /></div>
           <h3>
             {isDragActive ? 'Drop the images here' : 
              mode === 'single' ? 'Upload Plant Image' : 'Upload Plant Images'}
           </h3>
           <p>Drag and drop or click to select</p>
           <span className="file-types">Supported: JPG, PNG (Max 10MB)</span>
-          <span className="file-warning">⚠️ Please upload only plant leaf images</span>
+          <span className="file-warning"><FiAlertTriangle /> Please upload only plant leaf images</span>
         </div>
       ) : (
         <>

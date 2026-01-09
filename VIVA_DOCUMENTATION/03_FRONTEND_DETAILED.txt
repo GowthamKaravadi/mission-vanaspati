@@ -1,0 +1,702 @@
+================================================================================
+FRONTEND (REACT) - DETAILED EXPLANATION
+================================================================================
+
+WHAT IS FRONTEND?
+--------------------------------------------------------------------------------
+Frontend is everything users SEE and INTERACT with in their web browser:
+- Buttons they click
+- Forms they fill
+- Images they see
+- Pages they navigate
+
+Think of it as the "face" of your application.
+
+
+WHAT IS REACT?
+--------------------------------------------------------------------------------
+React is a JavaScript library for building user interfaces.
+
+SIMPLE ANALOGY:
+Imagine building with LEGO blocks:
+- Each LEGO block = A React Component (button, form, card)
+- You combine blocks = Complete page
+- Reuse same blocks = Consistent design
+
+EXAMPLE:
+Instead of writing HTML for every page, you create a "Button" component once,
+then use it everywhere. Change the Button component, ALL buttons update!
+
+
+REACT KEY CONCEPTS (EXPLAINED SIMPLY)
+--------------------------------------------------------------------------------
+
+1. COMPONENTS
+   - Reusable pieces of UI
+   - Like functions that return HTML
+   
+   Example:
+   ```jsx
+   function WelcomeMessage() {
+     return <h1>Welcome to Mission Vanaspati!</h1>
+   }
+   ```
+   
+   Now you can use <WelcomeMessage /> anywhere!
+
+2. JSX (JavaScript XML)
+   - Looks like HTML but inside JavaScript
+   - Makes writing UI code natural
+   
+   Example:
+   ```jsx
+   const element = <div className="card">Hello World</div>
+   ```
+   
+   It's JavaScript that LOOKS like HTML!
+
+3. PROPS (Properties)
+   - Data passed to components
+   - Like function arguments
+   
+   Example:
+   ```jsx
+   <Button text="Click Me" color="blue" />
+   ```
+   
+   Button receives "Click Me" and "blue" as props
+
+4. STATE
+   - Component's memory
+   - When state changes, component re-renders (updates)
+   
+   Example:
+   ```jsx
+   const [count, setCount] = useState(0);  // Start at 0
+   setCount(count + 1);  // Increase by 1
+   ```
+
+5. HOOKS
+   - Special functions that add powers to components
+   - useState = Add memory
+   - useEffect = Do something when component loads
+   - useContext = Access shared data
+
+6. CONTEXT
+   - Share data across entire app
+   - Without passing props through every component
+   
+   Example: User login info available everywhere without passing it manually
+
+
+YOUR FRONTEND STRUCTURE
+--------------------------------------------------------------------------------
+
+frontend-react/
+├── public/
+│   ├── images/           ← Static images
+│   └── remedies.json     ← Disease remedy data
+│
+├── src/
+│   ├── main.jsx          ← Application entry point (starts everything)
+│   ├── App.jsx           ← Main app component (root)
+│   │
+│   ├── components/       ← UI building blocks
+│   │   ├── Dashboard/    ← Main user interface
+│   │   │   ├── Dashboard.jsx       ← Container for everything
+│   │   │   ├── ImageUpload.jsx     ← Drag-drop file upload
+│   │   │   ├── Results.jsx         ← Show disease prediction
+│   │   │   ├── History.jsx         ← Past diagnoses list
+│   │   │   ├── DiseaseLibrary.jsx  ← Disease reference guide
+│   │   │   ├── MyGarden.jsx        ← Saved plants manager (modal)
+│   │   │
+│   │   ├── Garden/       ← Full page garden view
+│   │   │   └── GardenPage.jsx      ← My Garden full page with dark mode
+│   │   │   └── ProfileDropdown.jsx ← User menu
+│   │   │
+│   │   ├── Auth/         ← Login/Signup pages
+│   │   │   ├── Login.jsx
+│   │   │   └── Signup.jsx
+│   │   │
+│   │   ├── Admin/        ← Admin control panel
+│   │   │   └── AdminPanel.jsx
+│   │   │
+│   │   └── Feedback/     ← User feedback form
+│   │       └── Feedback.jsx
+│   │
+│   ├── context/          ← Shared state across app
+│   │   ├── AuthContext.jsx      ← User login status
+│   │   ├── ThemeContext.jsx     ← Dark/light mode
+│   │   └── HistoryContext.jsx   ← Diagnosis history
+│   │
+│   ├── services/         ← Backend communication
+│   │   └── api.js               ← All API calls
+│   │
+│   └── utils/            ← Helper functions
+│
+└── package.json          ← Project dependencies
+
+
+MAIN COMPONENTS EXPLAINED
+--------------------------------------------------------------------------------
+
+1. APP.JSX (The Root)
+   ═══════════════════════════════════════
+   - Entry point of your application
+   - Sets up routing (different pages)
+   - Wraps app with Context Providers
+   
+   Think of it as: The main container that holds everything
+   
+   What it does:
+   - Provides authentication to all components
+   - Provides theme (dark/light) to all components
+   - Defines routes:
+     • /login → Login page
+     • /signup → Signup page
+     • / → Main dashboard (requires login)
+     • /garden → My Garden full page (requires login)
+     • /admin → Admin panel (requires admin role)
+
+
+2. DASHBOARD.JSX (Main Page)
+   ═══════════════════════════════════════
+   The heart of your application where users spend most time.
+   
+   Components inside:
+   - Header (logo, theme toggle, profile menu)
+   - Mode Selector (Single Image vs Batch Upload)
+   - Image Upload Zone
+   - Results Display
+   - History Sidebar
+   - Disease Library Modal
+   - Feedback Modal
+   
+   Note: My Garden is now a separate full-page route at /garden
+   
+   State management:
+   ```jsx
+   const [mode, setMode] = useState('single');      // Upload mode
+   const [files, setFiles] = useState([]);          // Selected files
+   const [results, setResults] = useState(null);    // AI predictions
+   const [loading, setLoading] = useState(false);   // Loading state
+   ```
+   
+   Key function - handleAnalyze():
+   ```
+   1. User clicks "Analyze" button
+   2. Check if files are selected
+   3. Show loading spinner
+   4. Send files to backend API
+   5. Receive prediction results
+   6. Save to history (database)
+   7. Display results to user
+   8. Hide loading spinner
+   ```
+
+
+3. IMAGEUPLOAD.JSX (File Upload)
+   ═══════════════════════════════════════
+   Drag-and-drop interface for uploading images.
+   
+   Features:
+   - Drag image files into zone
+   - Or click to browse files
+   - Preview selected images
+   - Remove unwanted files
+   - Validates file type (only images)
+   
+   How it works:
+   ```
+   1. User drags file over zone → Highlight zone
+   2. User drops file → Read file as image
+   3. Create preview thumbnail
+   4. Store in state
+   5. Pass to parent (Dashboard) via callback
+   ```
+
+
+4. RESULTS.JSX (Show Predictions)
+   ═══════════════════════════════════════
+   Displays AI model predictions in beautiful cards.
+   
+   Single Mode:
+   - Shows disease name (e.g., "Tomato Late Blight")
+   - Confidence percentage (e.g., 95%)
+   - Top 3 alternative predictions
+   - Remedy information (treatments)
+   - Option to save to My Garden
+   
+   Batch Mode:
+   - Grid of cards, one per image
+   - Quick summary of each diagnosis
+   - Confidence indicators (color-coded)
+   
+   Data flow:
+   ```
+   Backend sends:
+   {
+     "predicted_class": "Tomato__Late_blight",
+     "confidence": 0.95,
+     "top_predictions": [
+       {"class_name": "Tomato__Late_blight", "confidence": 0.95},
+       {"class_name": "Tomato__Early_blight", "confidence": 0.03},
+       {"class_name": "Tomato__Bacterial_spot", "confidence": 0.01}
+     ]
+   }
+   
+   Component displays this beautifully formatted!
+   ```
+
+
+5. HISTORY.JSX (Past Diagnoses)
+   ═══════════════════════════════════════
+   Shows all previous diagnoses from database.
+   
+   Features:
+   - List of past diagnoses (newest first)
+   - Shows disease name, confidence, date
+   - "Single" or "Batch" badge
+   - Delete individual item
+   - Clear all history button
+   - Loading state while fetching
+   
+   Data source: HistoryContext
+   - Fetches from database on component mount
+   - Updates when new diagnosis is added
+   - Real-time sync with backend
+
+
+6. MYGARDEN.JSX (Plant Management)
+   ═══════════════════════════════════════
+   Users' personal plant collection.
+   
+   Features:
+   - Save plants with disease info
+   - Add personal notes
+   - Set status (Monitoring, Treated, Recovered)
+   - View saved plants in cards
+   - Delete plants
+   
+   Use case:
+   User diagnoses tomato plant → Saves to garden → Adds note "Applied
+   fungicide" → Checks back later to update status
+
+
+7. PROFILEDROPDOWN.JSX (User Menu)
+   ═══════════════════════════════════════
+   Clean dropdown menu in top-right corner.
+   
+   Shows:
+   - User icon and name
+   - My Garden option
+   - Admin Panel (if user is admin)
+   - Logout option
+   
+   Technical details:
+   - Uses useRef to detect clicks outside
+   - Closes dropdown when clicking elsewhere
+   - Conditional rendering (admin option only for admins)
+
+
+8. ADMINPANEL.JSX (Management)
+   ═══════════════════════════════════════
+   Special interface for administrators.
+   
+   Features:
+   - View all registered users
+   - Make users admin or remove admin
+   - Delete users
+   - View all feedback submissions
+   - Update feedback status (Pending/Reviewed)
+   - Statistics (total users, admins, etc.)
+   
+   Access control:
+   - Only users with is_admin=true can access
+   - Others redirected to dashboard
+
+
+CONTEXT API EXPLAINED
+--------------------------------------------------------------------------------
+
+Think of Context as a "global storage box" that any component can access.
+
+1. AUTHCONTEXT (Authentication)
+   ═══════════════════════════════════════
+   Stores: User login information
+   
+   Provides:
+   - user: Current user object {id, email, name}
+   - token: JWT authentication token
+   - isAdmin: Boolean (is user admin?)
+   - login(email, password): Login function
+   - logout(): Logout function
+   - signup(name, email, password): Signup function
+   
+   How it works:
+   ```
+   1. User submits login form
+   2. AuthContext calls API
+   3. Receives JWT token from backend
+   4. Stores token in localStorage (persists across browser refresh)
+   5. Decodes token to get user info
+   6. Sets user state
+   7. All components now know user is logged in!
+   ```
+
+
+2. THEMECONTEXT (Dark/Light Mode)
+   ═══════════════════════════════════════
+   Stores: User's theme preference
+   
+   Provides:
+   - isDark: Boolean (is dark mode active?)
+   - toggleTheme(): Switch between modes
+   
+   How it works:
+   ```
+   1. User clicks theme toggle button
+   2. ThemeContext flips isDark boolean
+   3. Adds 'dark-mode' class to <body>
+   4. All CSS variables change (colors update)
+   5. Saves preference to localStorage
+   ```
+   
+   CSS Variables:
+   ```css
+   :root {
+     --bg-primary: white;
+     --text-primary: black;
+   }
+   
+   .dark-mode {
+     --bg-primary: #0a0e27;
+     --text-primary: white;
+   }
+   ```
+   
+   Every component uses these variables, so ONE toggle changes EVERYTHING!
+
+
+3. HISTORYCONTEXT (Diagnosis History)
+   ═══════════════════════════════════════
+   Stores: User's diagnosis history
+   
+   Provides:
+   - history: Array of past diagnoses
+   - loading: Boolean (is data loading?)
+   - total: Total number of diagnoses
+   - addToHistory(data): Save new diagnosis
+   - deleteHistoryItem(id): Delete one item
+   - clearHistory(): Delete all history
+   
+   How it works:
+   ```
+   1. Component mounts (loads)
+   2. Calls API: GET /history/diagnosis
+   3. Receives array of diagnoses from database
+   4. Stores in state
+   5. History component displays the data
+   
+   When user analyzes new image:
+   1. Dashboard calls addToHistory()
+   2. POST request to backend
+   3. Saves to PostgreSQL database
+   4. Updates local state (immediate UI update)
+   ```
+
+
+API SERVICE (BACKEND COMMUNICATION)
+--------------------------------------------------------------------------------
+
+File: src/services/api.js
+
+This file handles ALL communication with backend.
+
+Structure:
+```javascript
+// Create axios instance (HTTP client)
+const api = axios.create({
+  baseURL: 'http://localhost:8000',  // Backend address
+  headers: { 'Content-Type': 'application/json' }
+});
+
+// Add token to every request (authentication)
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+```
+
+API GROUPS:
+
+1. authAPI
+   - login(email, password) → POST /login
+   - signup(name, email, password) → POST /signup
+   - getProfile() → GET /me
+
+2. predictionAPI
+   - predict(file) → POST /predict
+   - predictBatch(files) → POST /predict/batch
+
+3. historyAPI
+   - getHistory(limit, offset) → GET /history/diagnosis
+   - saveHistory(data) → POST /history/diagnosis
+   - deleteHistory(id) → DELETE /history/diagnosis/{id}
+   - clearHistory() → DELETE /history/diagnosis
+
+4. gardenAPI
+   - getPlants() → GET /garden/plants
+   - savePlant(data) → POST /garden/plants
+   - updatePlant(id, data) → PATCH /garden/plants/{id}
+   - deletePlant(id) → DELETE /garden/plants/{id}
+
+5. adminAPI
+   - getUsers() → GET /admin/users
+   - toggleAdmin(userId) → PUT /admin/users/{id}/toggle-admin
+   - deleteUser(userId) → DELETE /admin/users/{id}
+   - getFeedback() → GET /admin/feedback
+
+
+STYLING & DESIGN
+--------------------------------------------------------------------------------
+
+Your app uses CSS (Cascading Style Sheets) for visual design.
+
+Approach: Component-based CSS
+- Each component has its own CSS file
+- Dashboard.css styles Dashboard.jsx
+- Keeps styles organized and maintainable
+
+Key CSS Features:
+
+1. CSS VARIABLES (Custom Properties)
+   ```css
+   :root {
+     --primary-color: #2d6a4f;
+     --accent-color: #52b788;
+     --bg-primary: white;
+   }
+   
+   .button {
+     background: var(--primary-color);  /* Use variable */
+   }
+   ```
+   
+   Benefit: Change ONE variable, update ENTIRE theme!
+
+2. FLEXBOX (Layout System)
+   ```css
+   .container {
+     display: flex;           /* Enable flexbox */
+     justify-content: center; /* Center horizontally */
+     align-items: center;     /* Center vertically */
+     gap: 20px;              /* Space between items */
+   }
+   ```
+   
+   Makes positioning elements super easy!
+
+3. GRID (Layout System)
+   ```css
+   .image-grid {
+     display: grid;
+     grid-template-columns: repeat(3, 1fr); /* 3 equal columns */
+     gap: 20px;
+   }
+   ```
+   
+   Perfect for card layouts!
+
+4. RESPONSIVE DESIGN (Mobile-friendly)
+   ```css
+   @media (max-width: 768px) {
+     .header {
+       flex-direction: column;  /* Stack vertically on mobile */
+     }
+   }
+   ```
+   
+   App adapts to different screen sizes!
+
+
+ANIMATIONS (FRAMER MOTION)
+--------------------------------------------------------------------------------
+
+Framer Motion adds smooth animations to your app.
+
+Examples in your code:
+
+1. Fade In on Page Load
+   ```jsx
+   <motion.div
+     initial={{ opacity: 0 }}      // Start invisible
+     animate={{ opacity: 1 }}       // Fade to visible
+     transition={{ duration: 0.5 }} // Over 0.5 seconds
+   >
+     Content here
+   </motion.div>
+   ```
+
+2. Button Hover Effect
+   ```jsx
+   <motion.button
+     whileHover={{ scale: 1.05 }}  // Grow 5% on hover
+     whileTap={{ scale: 0.95 }}    // Shrink 5% on click
+   >
+     Click Me
+   </motion.button>
+   ```
+
+3. List Item Animations
+   ```jsx
+   <AnimatePresence>
+     {history.map(item => (
+       <motion.div
+         initial={{ x: -20, opacity: 0 }}  // Start left, invisible
+         animate={{ x: 0, opacity: 1 }}     // Slide right, visible
+         exit={{ x: 20, opacity: 0 }}       // Slide right, fade out
+       >
+         {item.disease_name}
+       </motion.div>
+     ))}
+   </AnimatePresence>
+   ```
+
+Makes your app feel polished and professional!
+
+
+ICONS (REACT-ICONS)
+--------------------------------------------------------------------------------
+
+Instead of image files, you use React Icons - scalable, customizable icons.
+
+Examples:
+- BiSun, BiMoon - Sun/moon for theme toggle
+- FiUsers, FiLogOut - User management icons
+- MdAdminPanelSettings - Admin icon
+- MdLibraryBooks - Library icon
+
+Usage:
+```jsx
+import { BiSun } from 'react-icons/bi';
+
+<BiSun className="icon" />
+```
+
+Benefits:
+- No image files needed
+- Scale to any size without blur
+- Change color with CSS
+- Thousands of icons available
+
+
+ROUTING (REACT ROUTER)
+--------------------------------------------------------------------------------
+
+React Router handles different pages (without full page reload).
+
+Your routes:
+```jsx
+<Routes>
+  <Route path="/login" element={<Login />} />
+  <Route path="/signup" element={<Signup />} />
+  <Route path="/dashboard" element={
+    <ProtectedRoute>  {/* Requires login */}
+      <Dashboard />
+    </ProtectedRoute>
+  } />
+  <Route path="/admin" element={
+    <ProtectedRoute adminOnly>  {/* Requires admin */}
+      <AdminPanel />
+    </ProtectedRoute>
+  } />
+</Routes>
+```
+
+Navigation:
+```jsx
+import { useNavigate } from 'react-router-dom';
+
+const navigate = useNavigate();
+navigate('/dashboard');  // Go to dashboard
+```
+
+Browser URL changes, but page doesn't reload = FAST!
+
+
+BUILD PROCESS (VITE)
+--------------------------------------------------------------------------------
+
+Vite is your build tool - it bundles all files into optimized production code.
+
+Development Mode (npm run dev):
+- Hot reload (changes appear instantly)
+- Source maps (easy debugging)
+- Fast refresh (keeps component state)
+- Runs on http://localhost:5174
+
+Production Build (npm run build):
+- Minifies code (removes spaces, shortens names)
+- Bundles all files into few files
+- Optimizes images
+- Creates `dist/` folder with production files
+
+
+DEPENDENCIES (PACKAGES USED)
+--------------------------------------------------------------------------------
+
+package.json lists all libraries:
+
+Core:
+- react: UI library
+- react-dom: React for web browsers
+- react-router-dom: Page routing
+
+State & Data:
+- axios: HTTP requests to backend
+
+UI & Styling:
+- framer-motion: Smooth animations
+- react-icons: Icon library
+- react-hot-toast: Notification popups
+
+Development:
+- vite: Build tool
+- eslint: Code quality checker
+
+
+VIVA TIPS FOR FRONTEND
+--------------------------------------------------------------------------------
+
+When explaining in viva:
+
+1. START SIMPLE:
+   "Frontend is the user interface built with React, running in the browser"
+
+2. EXPLAIN COMPONENT APPROACH:
+   "React lets us build reusable components like LEGO blocks. We created
+   components for login, dashboard, history, etc. and combined them."
+
+3. MENTION KEY FEATURES:
+   - User authentication with JWT
+   - Real-time disease detection
+   - Persistent history (database-backed)
+   - Responsive design (mobile-friendly)
+   - Dark mode support
+
+4. SHOW UNDERSTANDING OF DATA FLOW:
+   "User uploads image → Frontend sends to backend API → Backend processes
+   with AI → Returns prediction → Frontend displays result → Saves to database
+   via history API"
+
+5. HIGHLIGHT PROFESSIONAL ASPECTS:
+   - Context API for state management
+   - Axios for API calls with authentication
+   - Framer Motion for smooth animations
+   - Component-based architecture
+
+Remember: You don't need to memorize code. Understand the CONCEPTS and FLOW!

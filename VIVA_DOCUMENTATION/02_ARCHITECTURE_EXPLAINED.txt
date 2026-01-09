@@ -1,0 +1,344 @@
+================================================================================
+SYSTEM ARCHITECTURE - EXPLAINED SIMPLY
+================================================================================
+
+WHAT IS ARCHITECTURE?
+--------------------------------------------------------------------------------
+Architecture is like a building's blueprint. It shows:
+- What parts exist in your application
+- How these parts connect to each other
+- What each part is responsible for
+
+Think of it as a MAP of your entire project.
+
+
+THE BIG PICTURE (3-TIER ARCHITECTURE)
+--------------------------------------------------------------------------------
+Your application follows a "3-Tier Architecture" - a standard, professional design:
+
+┌─────────────────────────────────────────────────────────────┐
+│                    TIER 1: PRESENTATION                      │
+│                    (What Users See)                          │
+│                                                              │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │  FRONTEND - React Application                     │      │
+│  │  - Running in User's Web Browser                  │      │
+│  │  - Port: 5174 (http://localhost:5174)            │      │
+│  │  - Shows buttons, forms, images                   │      │
+│  └──────────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            ↕
+              (HTTP Requests/Responses)
+                            ↕
+┌─────────────────────────────────────────────────────────────┐
+│                    TIER 2: BUSINESS LOGIC                    │
+│                    (The Brain)                               │
+│                                                              │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │  BACKEND - FastAPI Server                         │      │
+│  │  - Running on Your Computer                       │      │
+│  │  - Port: 8000 (http://localhost:8000)            │      │
+│  │  - Processes requests                             │      │
+│  │  - Runs AI model                                  │      │
+│  │  - Validates data                                 │      │
+│  └──────────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            ↕
+              (SQL Queries/Results)
+                            ↕
+┌─────────────────────────────────────────────────────────────┐
+│                    TIER 3: DATA STORAGE                      │
+│                    (The Memory)                              │
+│                                                              │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │  DATABASE - PostgreSQL                            │      │
+│  │  - Stores all permanent data                      │      │
+│  │  - User accounts, history, plants                 │      │
+│  └──────────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+
+
+WHY THIS DESIGN?
+--------------------------------------------------------------------------------
+1. SEPARATION OF CONCERNS
+   - Each tier has ONE clear job
+   - Easy to understand and maintain
+   - If one part breaks, others still work
+
+2. SCALABILITY
+   - Can upgrade one tier without touching others
+   - Can move database to separate server later
+   - Can add more backend servers if needed
+
+3. SECURITY
+   - Users never directly access database
+   - Backend acts as a security guard
+   - All data passes through validation
+
+4. PROFESSIONAL STANDARD
+   - This is how companies build real applications
+   - Used by Facebook, Netflix, Amazon, etc.
+
+
+DETAILED COMPONENT BREAKDOWN
+--------------------------------------------------------------------------------
+
+TIER 1: FRONTEND (React Application)
+├── User Interface Components
+│   ├── Login/Signup Pages
+│   ├── Dashboard (Main Page)
+│   ├── Image Upload Zone
+│   ├── Results Display
+│   ├── History Viewer
+│   ├── My Garden
+│   ├── Admin Panel
+│   └── Disease Library
+│
+├── State Management
+│   ├── AuthContext - Manages user login status
+│   ├── ThemeContext - Manages dark/light mode
+│   ├── HistoryContext - Manages diagnosis history
+│   └── Component State - Temporary data in components
+│
+├── Services (API Calls)
+│   ├── api.js - Communicates with backend
+│   ├── authAPI - Login/Signup functions
+│   ├── predictionAPI - Disease detection functions
+│   ├── historyAPI - History management functions
+│   └── gardenAPI - Plant management functions
+│
+└── Styling
+    ├── CSS Files - Visual design
+    ├── Animations (Framer Motion)
+    └── Icons (React Icons)
+
+
+TIER 2: BACKEND (FastAPI Server)
+├── API Endpoints (Routes)
+│   ├── Authentication Routes (/signup, /login)
+│   ├── Prediction Routes (/predict, /predict/batch)
+│   ├── History Routes (/history/diagnosis)
+│   ├── Garden Routes (/garden/plants)
+│   ├── Admin Routes (/admin/users, /admin/feedback)
+│   └── Remedy Routes (/remedies)
+│
+├── Core Logic
+│   ├── User Authentication (JWT Tokens)
+│   ├── Image Processing
+│   ├── AI Model Integration
+│   ├── Data Validation
+│   └── Error Handling
+│
+├── AI/ML Components
+│   ├── PyTorch Model (plant_classifier_final.pth)
+│   ├── Predictor Class (loads model, makes predictions)
+│   ├── Image Transforms (prepares images for AI)
+│   └── Class Mappings (disease names)
+│
+└── Database Layer
+    ├── SQLAlchemy ORM (Object-Relational Mapping)
+    ├── Models (User, DiagnosisHistory, SavedPlant, etc.)
+    └── Database Connection Management
+
+
+TIER 3: DATABASE (PostgreSQL)
+├── Tables
+│   ├── users - User accounts
+│   ├── diagnosis_history - All past diagnoses
+│   ├── saved_plants - User's plant collection
+│   ├── remedies - Disease treatment information
+│   └── feedback - User feedback submissions
+│
+├── Relationships
+│   ├── One user → Many diagnoses
+│   ├── One user → Many saved plants
+│   └── One user → Many feedback items
+│
+└── Indexes
+    ├── Primary Keys (Fast lookups)
+    └── Timestamps (Fast date sorting)
+
+
+HOW THEY COMMUNICATE
+--------------------------------------------------------------------------------
+
+1. REST API PATTERN
+   Your frontend and backend use REST (Representational State Transfer):
+   
+   - HTTP Methods:
+     • GET = Retrieve data (like reading a book)
+     • POST = Create new data (like writing a new entry)
+     • PUT/PATCH = Update existing data (like editing)
+     • DELETE = Remove data (like erasing)
+   
+   - Example Communication:
+     Frontend: "GET /history/diagnosis" (Give me history)
+     Backend: Queries database → Returns JSON data
+     Frontend: Displays data in beautiful UI
+
+2. JSON DATA FORMAT
+   All data exchanges use JSON (JavaScript Object Notation):
+   
+   Example:
+   {
+     "disease_name": "Tomato Late Blight",
+     "confidence": 0.95,
+     "diagnosed_at": "2025-12-30T10:30:00"
+   }
+   
+   JSON is like a universal language both frontend and backend understand.
+
+3. JWT AUTHENTICATION
+   How system knows who you are:
+   
+   Step 1: User logs in
+   Step 2: Backend creates a special "token" (like a movie ticket)
+   Step 3: Frontend stores token
+   Step 4: Every request includes token in header
+   Step 5: Backend verifies token before allowing access
+
+
+DESIGN PATTERNS USED
+--------------------------------------------------------------------------------
+
+1. MVC-LIKE PATTERN
+   - Model (Database Models) = Data structure
+   - View (React Components) = What user sees
+   - Controller (API Endpoints) = Business logic
+
+2. REPOSITORY PATTERN
+   - Database access is centralized
+   - All queries go through SQLAlchemy models
+   - Easy to change database later
+
+3. DEPENDENCY INJECTION
+   - Components receive dependencies from outside
+   - Example: Database connection passed to endpoints
+   - Makes testing easier
+
+4. CONTEXT PATTERN (React)
+   - Share data across components without passing props
+   - AuthContext shares user info everywhere
+   - ThemeContext shares theme preference
+
+5. COMPONENT-BASED ARCHITECTURE
+   - UI broken into reusable pieces
+   - ProfileDropdown can be used anywhere
+   - Easy to maintain and update
+
+
+FILE STRUCTURE MAPPING
+--------------------------------------------------------------------------------
+
+frontend-react/
+├── src/
+│   ├── components/        ← All UI components (TIER 1)
+│   ├── context/           ← Shared state management
+│   ├── services/          ← API communication layer
+│   └── utils/             ← Helper functions
+│
+src/                       ← Backend code (TIER 2)
+├── core/                  ← AI model components
+│   ├── model.py          ← Neural network definition
+│   ├── predictor.py      ← Makes predictions
+│   └── dataset.py        ← Data loading
+├── database.py           ← Database models (TIER 3 interface)
+├── auth.py               ← Authentication logic
+└── fastapi_test.py       ← Main server file (API routes)
+
+models/                    ← Trained AI models
+└── plant_classifier_final.pth
+
+
+DEPLOYMENT ARCHITECTURE (HOW IT RUNS)
+--------------------------------------------------------------------------------
+
+DEVELOPMENT (Current - Your Computer):
+┌─────────────────────────────────────────────┐
+│          Your Laptop/Computer               │
+│                                             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
+│  │ Frontend │  │ Backend  │  │ Database │ │
+│  │ :5174    │  │ :8000    │  │ :5432    │ │
+│  └──────────┘  └──────────┘  └──────────┘ │
+└─────────────────────────────────────────────┘
+
+PRODUCTION (Real World - Cloud):
+┌────────────────────────────────────────────────┐
+│              Internet/Cloud                    │
+│                                                │
+│  ┌──────────────┐    ┌──────────────┐        │
+│  │   Frontend   │    │   Backend    │        │
+│  │   (Static)   │◄───┤   (Server)   │        │
+│  │              │    │              │        │
+│  └──────────────┘    └──────┬───────┘        │
+│                              │                 │
+│                      ┌───────▼────────┐       │
+│                      │   Database     │       │
+│                      │   (Separate)   │       │
+│                      └────────────────┘       │
+└────────────────────────────────────────────────┘
+
+
+KEY ARCHITECTURAL DECISIONS EXPLAINED
+--------------------------------------------------------------------------------
+
+Q: Why React for frontend?
+A: React is component-based (reusable pieces), has huge community support,
+   and makes building interactive UIs easy.
+
+Q: Why FastAPI for backend?
+A: FastAPI is modern, fast, has automatic documentation, perfect for Python
+   AI models, and easy to learn.
+
+Q: Why PostgreSQL for database?
+A: PostgreSQL is reliable, free, handles complex data types (JSON), perfect
+   for production apps, and widely used in industry.
+
+Q: Why separate frontend and backend?
+A: "Separation of Concerns" - each part has clear responsibility. Can update
+   UI without touching backend logic. Can scale independently.
+
+Q: Why JWT for authentication?
+A: JWT is stateless (server doesn't need to remember), secure, standard in
+   industry, and works across different devices.
+
+
+SCALABILITY CONSIDERATIONS
+--------------------------------------------------------------------------------
+
+Your architecture can grow:
+
+1. ADD MORE USERS
+   - Current: Handles ~100 concurrent users
+   - Scale: Add load balancer, multiple backend servers
+
+2. ADD MORE FEATURES
+   - Just add new components (frontend)
+   - Just add new endpoints (backend)
+   - Doesn't break existing code
+
+3. IMPROVE PERFORMANCE
+   - Add caching (Redis)
+   - Add CDN for images
+   - Optimize database queries
+
+4. MOVE TO CLOUD
+   - Frontend → Netlify/Vercel
+   - Backend → AWS/Azure/Google Cloud
+   - Database → Managed PostgreSQL service
+
+
+VIVA TIP
+--------------------------------------------------------------------------------
+When explaining architecture in viva:
+
+1. Draw the 3-tier diagram on whiteboard
+2. Explain: "Users interact with React UI, which sends requests to FastAPI
+   backend, which stores data in PostgreSQL"
+3. Mention: "This is industry-standard architecture used by professional
+   applications"
+4. Emphasize: "Separation of concerns makes it maintainable and scalable"
+
+This shows you understand not just WHAT you built, but WHY it's designed
+this way!

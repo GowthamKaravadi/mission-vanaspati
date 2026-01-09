@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { BiSun, BiMoon } from 'react-icons/bi';
+import { MdLibraryBooks } from 'react-icons/md';
+import { FiMessageSquare } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useHistory } from '../../context/HistoryContext';
@@ -11,6 +14,7 @@ import Results from './Results';
 import History from './History';
 import Feedback from '../Feedback/Feedback';
 import DiseaseLibrary from './DiseaseLibrary';
+import ProfileDropdown from './ProfileDropdown';
 import { ResultSkeleton } from '../LoadingSkeleton';
 import './Dashboard.css';
 
@@ -41,20 +45,43 @@ const Dashboard = () => {
       if (mode === 'single') {
         const response = await predictionAPI.predict(files[0]);
         setResults(response.data);
-        addToHistory({
-          type: 'single',
-          result: response.data,
-          filename: files[0].name
-        });
+        
+        // Save to history with proper structure
+        try {
+          await addToHistory({
+            type: 'single',
+            disease: response.data.predicted_class,
+            confidence: response.data.confidence,
+            imageName: response.data.filename || files[0].name,
+            alternatives: response.data.top_predictions || [],
+            remedyInfo: {}, // Will be fetched separately when viewing details
+          });
+        } catch (historyErr) {
+          console.error('Failed to save to history:', historyErr);
+          // Don't block the user flow if history save fails
+        }
+        
         toast.success('Analysis complete!');
       } else {
         const response = await predictionAPI.predictBatch(files);
         setResults(response.data.predictions);
-        addToHistory({
-          type: 'batch',
-          results: response.data.predictions,
-          count: files.length
-        });
+        
+        // Save batch results to history
+        try {
+          for (const pred of response.data.predictions) {
+            await addToHistory({
+              type: 'batch',
+              disease: pred.predicted_class,
+              confidence: pred.confidence,
+              imageName: pred.filename,
+              alternatives: pred.top_predictions || [],
+              remedyInfo: {},
+            });
+          }
+        } catch (historyErr) {
+          console.error('Failed to save batch to history:', historyErr);
+        }
+        
         toast.success(`Analyzed ${files.length} images!`);
       }
     } catch (err) {
@@ -85,13 +112,14 @@ const Dashboard = () => {
           </div>
           <div className="header-actions">
             <motion.button 
-              className="theme-toggle"
+              className="theme-toggle-large"
               onClick={toggleTheme}
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.1, rotate: 180 }}
               whileTap={{ scale: 0.9 }}
               transition={{ duration: 0.3 }}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
-              {isDark ? '○' : '●'}
+              {isDark ? <BiSun className="theme-icon" /> : <BiMoon className="theme-icon" />}
             </motion.button>
             <motion.button 
               className="icon-btn"
@@ -100,36 +128,15 @@ const Dashboard = () => {
               whileTap={{ scale: 0.95 }}
               title="Disease Library"
             >
-              📖
+              <MdLibraryBooks className="header-icon" />
             </motion.button>
-            <motion.button 
-              className="icon-btn"
-              onClick={() => setShowFeedback(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              title="Report Feedback"
-            >
-              ✎
-            </motion.button>
-            <span className="user-email">{user?.username}</span>
-            {isAdmin && (
-              <motion.button 
-                onClick={() => navigate('/admin')} 
-                className="btn btn-secondary"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Admin Panel
-              </motion.button>
-            )}
-            <motion.button 
-              onClick={handleLogout} 
-              className="btn btn-outline"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Logout
-            </motion.button>
+            <ProfileDropdown
+              user={user}
+              isAdmin={isAdmin}
+              onLogout={handleLogout}
+              onAdminClick={() => navigate('/admin')}
+              onMyGardenClick={() => navigate('/garden')}
+            />
           </div>
         </div>
       </header>
@@ -197,6 +204,24 @@ const Dashboard = () => {
         )}
 
         <History />
+
+        {/* Feedback Button at Bottom */}
+        <motion.div 
+          className="feedback-container"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <motion.button
+            className="btn-feedback-large"
+            onClick={() => setShowFeedback(true)}
+            whileHover={{ scale: 1.05, y: -4 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <FiMessageSquare className="feedback-icon" />
+            <span>Send Feedback</span>
+          </motion.button>
+        </motion.div>
       </main>
 
       {showFeedback && <Feedback onClose={() => setShowFeedback(false)} />}
